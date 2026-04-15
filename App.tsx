@@ -63,7 +63,7 @@ const isResumeEmpty = (data: Resume): boolean => {
 const App: React.FC = () => {
   const [userResumeData, setUserResumeData] = useState<Resume>(INITIAL_RESUME_DATA);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
-    () => (localStorage.getItem(TEMPLATE_KEY) as Template) || null
+    () => (localStorage.getItem(TEMPLATE_KEY) as Template) || 'A'
   );
   const [viewMode, setViewMode] = useState<'personal' | 'sample'>(
     () => (localStorage.getItem(VIEW_MODE_KEY) as 'personal' | 'sample') || 'personal'

@@ -126,7 +126,7 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
     >
       {/* Brand */}
       <div className="flex items-center gap-3">
-        <img src="/logo.png" alt="logo" className="w-7 h-7 rounded-md" style={{ imageRendering: 'crisp-edges' }} />
+        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="logo" className="w-7 h-7 rounded-md" style={{ imageRendering: 'crisp-edges' }} />
         <div>
           <span className="text-sm font-semibold text-white tracking-tight">Resume Builder</span>
           <span className="ml-2 text-xs font-medium px-1.5 py-0.5 rounded"
