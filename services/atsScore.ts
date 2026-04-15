@@ -143,11 +143,22 @@ export function computeATSScore(resume: Resume): ATSResult {
 
 // ── JD Keyword Match Score ─────────────────────────────────────────────────
 const STOP_WORDS = new Set([
+  // Articles, conjunctions, prepositions
   'a','an','the','and','or','but','in','on','at','to','for','of','with','by',
   'from','as','is','are','was','were','be','been','being','have','has','had',
   'do','does','did','will','would','could','should','may','might','must','can',
   'this','that','these','those','it','its','we','our','you','your','they','their',
   'i','my','he','his','she','her','not','no','so','if','then','than','when','who',
+  // HR/JD boilerplate
+  'role','type','category','industry','department','employment','education',
+  'experience','responsibilities','skills','required','preferred','summary',
+  'key','job','title','seeking','ideal','candidate','ability','ensure',
+  'work','working','works','team','teams','including','such','other','also',
+  'across','within','well','strong','using','use','used','based','related',
+  'years','year','time','full','permanent','any','all','high','large',
+  'new','both','each','more','most','least','various','multiple','overall',
+  'ug','pg','btech','mtech','specialization','specialisation',
+  'miscellaneous','engineering','quality','assurance','testing',
 ]);
 
 // Common abbreviation expansions — resume shorthand → full term
@@ -159,12 +170,15 @@ const ABBREV_MAP: Record<string, string> = {
   ui: 'user interface', ux: 'user experience', ml: 'machine learning',
   ai: 'artificial intelligence', db: 'database', fe: 'frontend', be: 'backend',
   e2e: 'end to end', oop: 'object oriented programming',
+  aws: 'amazon web services', gcp: 'google cloud platform',
+  etl: 'extract transform load', sdlc: 'software development lifecycle',
 };
 
 function tokenize(text: string): Set<string> {
   const tokens = new Set<string>();
   text.toLowerCase().split(/\W+/).forEach(tok => {
-    if (!tok || tok.length < 2 || STOP_WORDS.has(tok)) return;
+    // Skip: empty, pure numbers, length < 3, stop words
+    if (!tok || /^\d+$/.test(tok) || tok.length < 3 || STOP_WORDS.has(tok)) return;
     tokens.add(tok);
     if (ABBREV_MAP[tok]) tokens.add(ABBREV_MAP[tok]);
   });
@@ -183,9 +197,11 @@ export function computeJDMatchScore(resume: Resume, jd: string): number {
     ...(resume.skills_core ?? []),
     ...(resume.skills_tools ?? []),
     ...(resume.skills_soft ?? []),
-    ...(resume.work_experience ?? []).map(j => `${j.title ?? ''} ${j.employer ?? ''} ${(j.achievements ?? []).join(' ')}`),
+    ...(resume.work_experience ?? []).map(j =>
+      `${j.title ?? ''} ${j.employer ?? ''} ${(j.achievements ?? []).join(' ')} ${(j.tech_stack ?? []).join(' ')}`
+    ),
     ...(resume.certifications ?? []).map(c => c.name ?? ''),
-    ...(resume.projects ?? []).flatMap(p => [p.name ?? '', ...(p.description ?? [])]),
+    ...(resume.projects ?? []).flatMap(p => [p.name ?? '', ...(p.description ?? []), ...(p.tech_stack ?? [])]),
     ...(resume.education ?? []).map(e => `${e.degree ?? ''} ${e.institution ?? ''}`),
   ];
 
