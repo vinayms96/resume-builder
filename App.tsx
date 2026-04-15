@@ -162,6 +162,8 @@ const App: React.FC = () => {
     }
   }, [hasAnyData, userResumeData]);
 
+  const [mobileTab, setMobileTab] = useState<'form' | 'preview'>('form');
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--color-surface)' }}>
       <Header
@@ -174,10 +176,28 @@ const App: React.FC = () => {
         atsResult={atsResult}
         jdMatchScore={jdMatchScore}
       />
-      <main className="flex-grow flex overflow-hidden" style={{ height: 'calc(100vh - 56px)' }}>
-        {/* Left: Template picker + Form — more space for editing */}
+
+      {/* Mobile tab bar — hidden on lg+ */}
+      <div className="lg:hidden flex no-print" style={{ borderBottom: '1px solid var(--color-surface-container)', background: 'var(--color-surface-low)' }}>
+        {(['form', 'preview'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setMobileTab(tab)}
+            className="flex-1 py-2.5 text-xs font-semibold capitalize transition-colors"
+            style={{
+              color: mobileTab === tab ? 'var(--color-primary)' : 'var(--color-outline)',
+              borderBottom: mobileTab === tab ? '2px solid var(--color-primary)' : '2px solid transparent',
+            }}
+          >
+            {tab === 'form' ? 'Edit' : 'Preview'}
+          </button>
+        ))}
+      </div>
+
+      <main className="flex-grow flex overflow-hidden">
+        {/* Left: Template picker + Form */}
         <div
-          className="w-full lg:w-[55%] overflow-y-auto flex flex-col"
+          className={`${mobileTab === 'form' ? 'flex' : 'hidden'} lg:flex w-full lg:w-[55%] overflow-y-auto flex-col`}
           style={{ background: 'var(--color-surface-low)' }}
         >
           <TemplateSelector
@@ -186,14 +206,14 @@ const App: React.FC = () => {
             jd={jd}
             onJdChange={setJd}
           />
-          <div className="flex-1 px-5 pb-8 pt-0">
+          <div className="flex-1 px-4 sm:px-5 pb-8 pt-0">
             <ResumeForm resumeData={userResumeData} onFieldChange={handleFieldChange} selectedTemplate={selectedTemplate} />
           </div>
         </div>
 
-        {/* Right: Pure A4 preview — compact, centered */}
+        {/* Right: Preview */}
         <div
-          className="hidden lg:flex lg:flex-col lg:w-[45%] overflow-y-auto p-5"
+          className={`${mobileTab === 'preview' ? 'flex' : 'hidden'} flex-col w-full lg:flex lg:flex-col lg:w-[45%] overflow-y-auto p-4 lg:p-5`}
           style={{ background: 'var(--color-surface)' }}
         >
           <ResumePreview

@@ -73,7 +73,7 @@ const DevTools: React.FC<DevToolsProps> = ({ onRestore }) => {
     borderRadius: '6px',
     border: 'none',
     background: tab === t ? '#1E293B' : 'transparent',
-    color: tab === t ? '#E2E8F0' : '#475569',
+    color: tab === t ? '#E2E8F0' : '#94A3B8',
     transition: 'all 150ms',
   });
 
@@ -146,13 +146,13 @@ const DevTools: React.FC<DevToolsProps> = ({ onRestore }) => {
                 viewError ? (
                   <p className="text-xs" style={{ color: '#F87171' }}>{viewError}</p>
                 ) : (
-                  <pre className="text-xs leading-relaxed whitespace-pre-wrap break-all" style={{ color: '#94A3B8' }}>
+                  <pre className="text-xs leading-relaxed whitespace-pre-wrap break-all" style={{ color: '#CBD5E1' }}>
                     {json || 'No data found.'}
                   </pre>
                 )
               ) : (
                 <div className="flex flex-col gap-3 h-full">
-                  <p className="text-xs" style={{ color: '#475569' }}>
+                  <p className="text-xs" style={{ color: '#94A3B8' }}>
                     Paste previously copied JSON below to restore your resume data.
                   </p>
                   <textarea
@@ -163,8 +163,8 @@ const DevTools: React.FC<DevToolsProps> = ({ onRestore }) => {
                     style={{
                       minHeight: '220px',
                       background: '#0B1120',
-                      color: '#94A3B8',
-                      border: `1px solid ${restoreState === 'error' ? '#F87171' : restoreState === 'success' ? '#86EFAC' : '#1E293B'}`,
+                      color: '#CBD5E1',
+                      border: `1px solid ${restoreState === 'error' ? '#F87171' : restoreState === 'success' ? '#86EFAC' : '#334155'}`,
                       outline: 'none',
                       fontFamily: 'monospace',
                     }}
@@ -194,10 +194,10 @@ const DevTools: React.FC<DevToolsProps> = ({ onRestore }) => {
             {/* Footer */}
             <div className="px-5 py-2.5 flex items-center gap-3"
               style={{ borderTop: '1px solid #1E293B' }}>
-              <span className="text-xs font-mono" style={{ color: '#334155' }}>
+              <span className="text-xs font-mono" style={{ color: '#64748B' }}>
                 {tab === 'view' ? 'read-only · your browser storage' : 'paste valid JSON to overwrite current data'}
               </span>
-              <span className="ml-auto text-xs font-mono" style={{ color: '#334155' }}>dev only</span>
+              <span className="ml-auto text-xs font-mono" style={{ color: '#64748B' }}>dev only</span>
             </div>
           </div>
         </div>

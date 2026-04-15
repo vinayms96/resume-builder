@@ -116,7 +116,7 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
 
   return (
     <header
-      className="no-print h-14 sticky top-0 z-20 flex items-center justify-between px-6"
+      className="no-print h-14 sticky top-0 z-20 flex items-center justify-between px-3 sm:px-6"
       style={{
         background: 'rgba(30,58,95,0.97)',
         backdropFilter: 'blur(12px)',
@@ -125,17 +125,19 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
       }}
     >
       {/* Brand */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 flex-shrink-0">
         <img src={`${import.meta.env.BASE_URL}logo.png`} alt="logo" className="w-7 h-7 rounded-md" style={{ imageRendering: 'crisp-edges' }} />
-        <div>
-          <span className="text-sm font-semibold text-white tracking-tight">Resume Builder</span>
-          <span className="ml-2 text-xs font-medium px-1.5 py-0.5 rounded"
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-white tracking-tight leading-tight">
+            Resume<br />Builder
+          </span>
+          <span className="text-xs font-medium px-1.5 py-0.5 rounded flex-shrink-0"
             style={{ background: 'rgba(37,99,235,0.4)', color: '#93C5FD' }}>ATS</span>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
 
         {/* ── ATS Score button + popup ── */}
         <div className="relative" ref={atsRef}>
@@ -147,19 +149,19 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
             onMouseEnter={e => (e.currentTarget.style.background = `${displayColor}45`)}
             onMouseLeave={e => (e.currentTarget.style.background = `${displayColor}30`)}
           >
-            <span style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.04em' }}>
+            <span className="hidden sm:inline" style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.04em' }}>
               {hasJD ? 'ATS Match' : 'Profile Score'}
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.25)' }}>·</span>
+            <span className="hidden sm:inline" style={{ color: 'rgba(255,255,255,0.25)' }}>·</span>
             <span className="flex items-center justify-center w-5 h-5 rounded-full text-white font-bold"
               style={{ background: displayColor, fontSize: '10px' }}>
               {displayScore}
             </span>
-            <span style={{ fontWeight: 700 }}>{displayLabel}</span>
-            <span className="w-16 h-1.5 rounded-full block" style={{ position: 'relative', background: 'rgba(255,255,255,0.15)' }}>
+            <span className="hidden sm:inline" style={{ fontWeight: 700 }}>{displayLabel}</span>
+            <span className="hidden sm:block w-16 h-1.5 rounded-full" style={{ position: 'relative', background: 'rgba(255,255,255,0.15)' }}>
               <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${displayScore}%`, background: displayColor }} />
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px' }}>/100</span>
+            <span className="hidden sm:inline" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px' }}>/100</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
               style={{ transform: isATSOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 200ms' }}>
               <polyline points="6 9 12 15 18 9" />
@@ -169,9 +171,11 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
           {/* ATS Popup */}
           {isATSOpen && (
             <div
-              className="absolute left-0 mt-3 rounded-2xl z-50"
+              className="fixed sm:absolute left-2 right-2 sm:left-0 sm:right-auto top-[60px] sm:top-auto sm:mt-3 rounded-2xl z-50"
               style={{
-                width: '500px',
+                width: undefined,
+                maxWidth: '500px',
+                margin: '0 auto',
                 background: '#FFFFFF',
                 boxShadow: '0 24px 60px rgba(2,36,72,0.28), 0 2px 8px rgba(0,0,0,0.08)',
                 border: `1.5px solid ${color}33`,
@@ -286,22 +290,32 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
         {viewMode === 'personal' ? (
           <button
             onClick={onLoadSample}
-            className="flex items-center justify-center px-3 text-xs font-semibold rounded-md transition-all cursor-pointer"
-            style={{ width: '108px', height: '32px', color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.06)', border: '1px solid transparent' }}
+            className="flex items-center justify-center text-xs font-semibold rounded-md transition-all cursor-pointer"
+            style={{ height: '32px', minWidth: '32px', padding: '0 8px',
+                     color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.06)', border: '1px solid transparent' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+            title="Load Sample"
           >
-            Load Sample
+            <span className="hidden sm:inline" style={{ whiteSpace: 'nowrap' }}>Load Sample</span>
+            <svg className="sm:hidden w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
           </button>
         ) : (
           <button
             onClick={onSwitchToPersonal}
-            className="flex items-center justify-center gap-1.5 px-3 text-xs font-semibold rounded-md transition-all cursor-pointer"
-            style={{ width: '108px', height: '32px', color: '#FFF7ED', background: 'rgba(234,88,12,0.75)', border: '1px solid rgba(234,88,12,0.9)' }}
+            className="flex items-center justify-center text-xs font-semibold rounded-md transition-all cursor-pointer"
+            style={{ height: '32px', minWidth: '32px', padding: '0 8px',
+                     color: '#FFF7ED', background: 'rgba(234,88,12,0.75)', border: '1px solid rgba(234,88,12,0.9)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(234,88,12,0.95)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'rgba(234,88,12,0.75)')}
+            title="My Resume"
           >
-            <span>←</span><span>My Resume</span>
+            <span className="hidden sm:inline" style={{ whiteSpace: 'nowrap' }}>← My Resume</span>
+            <svg className="sm:hidden w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
           </button>
         )}
 
@@ -314,7 +328,10 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.35)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.22)')}
             >
-              Clear
+              <span className="hidden sm:inline">Clear</span>
+              <svg className="sm:hidden w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
             </button>
 
             {showClearConfirm && (
@@ -376,12 +393,12 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
             onMouseEnter={e => (e.currentTarget.style.background = '#1D4ED8')}
             onMouseLeave={e => (e.currentTarget.style.background = '#2563EB')}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            Export
-            <svg className="w-3 h-3 transition-transform duration-150"
+            <span className="hidden sm:inline">Export</span>
+            <svg className="hidden sm:block w-3 h-3 transition-transform duration-150"
               style={{ transform: isExportOpen ? 'rotate(180deg)' : 'rotate(0)' }}
               fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

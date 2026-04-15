@@ -74,8 +74,8 @@ const TemplateThumbnail: React.FC<{ value: string; selected: boolean }> = ({ val
 };
 
 const ATSMatchBadge: React.FC<{ active: boolean }> = ({ active }) => (
-  <span className="flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full"
-    style={{ background: active ? '#16a34a15' : '#DC262615', color: active ? '#16a34a' : '#DC2626' }}>
+  <span className="flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+    style={{ background: active ? '#16a34a15' : '#DC262615', color: active ? '#16a34a' : '#DC2626', whiteSpace: 'nowrap' }}>
     <span style={{
       width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
       background: active ? '#16a34a' : '#DC2626',
@@ -118,11 +118,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
 
   return (
     <div
-      className="flex-shrink-0 px-5 pt-5 pb-4 flex gap-5"
+      className="flex-shrink-0 px-4 sm:px-5 pt-4 sm:pt-5 pb-4 flex flex-col md:flex-row gap-4 md:gap-5"
       style={{ borderBottom: '1px solid var(--color-surface-container)' }}
     >
       {/* Left: Template picker */}
-      <div className="flex flex-col flex-shrink-0" style={{ width: '220px' }}>
+      <div className="flex flex-col flex-shrink-0 md:w-[220px]">
         {/* Header row */}
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--color-outline)' }}>
@@ -178,7 +178,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
       </div>
 
       {/* Divider */}
-      <div style={{ width: '1px', background: 'var(--color-surface-container)', flexShrink: 0 }} />
+      <div className="md:hidden" style={{ height: '1px', background: 'var(--color-surface-container)' }} />
+      <div className="hidden md:block" style={{ width: '1px', background: 'var(--color-surface-container)', flexShrink: 0 }} />
 
       {/* Right: Job Description */}
       <div className="flex flex-col flex-1 min-w-0">
@@ -238,16 +239,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
             {/* Modal header */}
             <div className="flex items-center justify-between px-5 py-3.5"
               style={{ borderBottom: '1px solid var(--color-surface-container)' }}>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="text-sm font-semibold" style={{ color: 'var(--color-on-surface)' }}>
                   Job Description
                 </span>
-                {jd.trim() && (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                    style={{ background: '#2563EB15', color: '#2563EB' }}>
-                    ATS Match active
-                  </span>
-                )}
+                <ATSMatchBadge active={!!jd.trim()} />
               </div>
               <div className="flex items-center gap-3">
                 {jd.trim() && (
