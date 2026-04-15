@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Template, TEMPLATE_OPTIONS } from '../types';
 
 interface TemplateSelectorProps {
@@ -73,8 +73,36 @@ const TemplateThumbnail: React.FC<{ value: string; selected: boolean }> = ({ val
   );
 };
 
+const ExpandIcon = () => (
+  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+      d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, onTemplateChange, jd, onJdChange }) => {
   const activeMeta = selectedTemplate ? TEMPLATE_META[selectedTemplate] : null;
+  const [expanded, setExpanded] = useState(false);
+  const modalRef = useRef<HTMLTextAreaElement>(null);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!expanded) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [expanded]);
+
+  // Focus textarea when modal opens
+  useEffect(() => {
+    if (expanded) setTimeout(() => modalRef.current?.focus(), 50);
+  }, [expanded]);
 
   return (
     <div
@@ -146,12 +174,25 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
           <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--color-outline)' }}>
             Job Description
           </span>
-          {jd.trim() && (
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
-              style={{ background: '#2563EB15', color: '#2563EB' }}>
-              ATS Match active
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {jd.trim() && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: '#2563EB15', color: '#2563EB' }}>
+                ATS Match active
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              title="Expand editor"
+              className="flex items-center justify-center rounded transition-colors"
+              style={{ color: 'var(--color-outline)', width: 22, height: 22 }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#2563EB')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-outline)')}
+            >
+              <ExpandIcon />
+            </button>
+          </div>
         </div>
         <textarea
           value={jd}
@@ -170,6 +211,98 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
           onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-surface-container)')}
         />
       </div>
+
+      {/* Expanded JD modal */}
+      {expanded && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={e => { if (e.target === e.currentTarget) setExpanded(false); }}
+        >
+          <div
+            className="flex flex-col rounded-xl shadow-2xl"
+            style={{
+              width: 'min(720px, 90vw)',
+              height: 'min(600px, 85vh)',
+              background: 'var(--color-surface-low)',
+              border: '1px solid var(--color-surface-container)',
+            }}
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-3.5"
+              style={{ borderBottom: '1px solid var(--color-surface-container)' }}>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold" style={{ color: 'var(--color-on-surface)' }}>
+                  Job Description
+                </span>
+                {jd.trim() && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                    style={{ background: '#2563EB15', color: '#2563EB' }}>
+                    ATS Match active
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {jd.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => onJdChange('')}
+                    className="text-xs font-medium px-2.5 py-1 rounded transition-colors"
+                    style={{ color: '#EF4444', border: '1px solid #EF444430' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#EF444410')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    Clear
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setExpanded(false)}
+                  className="flex items-center justify-center rounded-md transition-colors"
+                  style={{ color: 'var(--color-outline)', width: 28, height: 28 }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-surface-container)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+            </div>
+
+            {/* Textarea */}
+            <textarea
+              ref={modalRef}
+              value={jd}
+              onChange={e => onJdChange(e.target.value)}
+              placeholder="Paste the full job description here…"
+              className="flex-1 resize-none text-sm p-5 leading-relaxed rounded-b-xl"
+              style={{
+                background: 'var(--color-surface)',
+                color: 'var(--color-on-surface)',
+                border: 'none',
+                outline: 'none',
+              }}
+            />
+
+            {/* Footer */}
+            <div className="flex items-center justify-between px-5 py-2.5"
+              style={{ borderTop: '1px solid var(--color-surface-container)' }}>
+              <span className="text-xs" style={{ color: 'var(--color-outline)' }}>
+                {jd.trim() ? `${jd.trim().split(/\s+/).length} words` : 'No content'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                className="text-xs font-semibold px-4 py-1.5 rounded-lg text-white transition-opacity"
+                style={{ background: '#2563EB' }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

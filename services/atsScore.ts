@@ -142,43 +142,68 @@ export function computeATSScore(resume: Resume): ATSResult {
 }
 
 // ── JD Keyword Match Score ─────────────────────────────────────────────────
-const STOP_WORDS = new Set([
-  // Articles, conjunctions, prepositions
-  'a','an','the','and','or','but','in','on','at','to','for','of','with','by',
-  'from','as','is','are','was','were','be','been','being','have','has','had',
-  'do','does','did','will','would','could','should','may','might','must','can',
-  'this','that','these','those','it','its','we','our','you','your','they','their',
-  'i','my','he','his','she','her','not','no','so','if','then','than','when','who',
-  // HR/JD boilerplate
-  'role','type','category','industry','department','employment','education',
-  'experience','responsibilities','skills','required','preferred','summary',
-  'key','job','title','seeking','ideal','candidate','ability','ensure',
-  'work','working','works','team','teams','including','such','other','also',
-  'across','within','well','strong','using','use','used','based','related',
-  'years','year','time','full','permanent','any','all','high','large',
-  'new','both','each','more','most','least','various','multiple','overall',
-  'ug','pg','btech','mtech','specialization','specialisation',
-  'miscellaneous','engineering','quality','assurance','testing',
+
+// Curated set of recognizable professional/tech keywords across all job families.
+// Only JD tokens that appear in this set (or in the resume itself) are counted —
+// everything else (boilerplate, grammar, company info) is ignored regardless of JD format.
+const TECH_KEYWORDS = new Set([
+  // Languages
+  'python','javascript','typescript','java','scala','kotlin','ruby','golang','rust','swift',
+  'php','perl','bash','shell','powershell','sql','nosql','graphql','html','css','sass','less',
+  'r','matlab','julia','groovy','haskell','elixir','clojure',
+  // Testing & QA
+  'selenium','cypress','playwright','pytest','junit','testng','mocha','jest','jasmine',
+  'cucumber','behave','robotframework','appium','espresso','xcuitest','testcafe',
+  'webdriverio','postman','soapui','karate','rest','api','soap','grpc',
+  'automation','manual','regression','integration','functional','performance','load',
+  'stress','security','penetration','accessibility','exploratory','smoke','sanity',
+  'e2e','bdd','tdd','atdd','shift','left','contract','mutation',
+  // Data & Analytics
+  'pandas','numpy','scipy','matplotlib','seaborn','spark','hadoop','kafka','airflow',
+  'dbt','tableau','powerbi','looker','metabase','superset','databricks','snowflake',
+  'redshift','bigquery','hive','presto','trino','flink','beam','etl','elt','pipeline',
+  'warehouse','lakehouse','datalake','analytics','reporting','dashboard',
+  'validation','quality','reconciliation','lineage','profiling',
+  // Frameworks & Libraries
+  'react','angular','vue','nextjs','nuxtjs','svelte','django','flask','fastapi','spring',
+  'express','rails','laravel','dotnet','nodejs','nestjs','graphene','celery','redis',
+  'lodash','rxjs','webpack','vite','rollup','babel','storybook','tailwind','bootstrap',
+  // Cloud & DevOps
+  'aws','azure','gcp','kubernetes','docker','terraform','ansible','puppet','chef',
+  'jenkins','github','gitlab','bitbucket','circleci','travisci','argocd','helm',
+  'prometheus','grafana','datadog','splunk','elk','cloudwatch','lambda','serverless',
+  'microservices','containers','devops','sre','devsecops','ci','cd','cicd',
+  // Databases
+  'postgresql','mysql','mongodb','redis','cassandra','dynamodb','elasticsearch',
+  'oracle','mssql','sqlite','firestore','supabase','neo4j','couchdb',
+  // Methodologies & Practices
+  'agile','scrum','kanban','waterfall','lean','safe','xp','devops','sre',
+  'sdlc','sprint','standup','retrospective','backlog','jira','confluence',
+  'git','github','gitlab','version','control','code','review','pull','request',
+  // Tools & Platforms
+  'linux','unix','windows','macos','bash','vim','vscode','intellij','eclipse',
+  'slack','teams','zoom','notion','trello','asana','figma','sketch',
+  'postman','insomnia','swagger','openapi','sonarqube','checkmarx','snyk',
+  // Soft / Domain Skills
+  'leadership','communication','collaboration','mentoring','coaching','ownership',
+  'stakeholder','cross','functional','analytical','problem','solving',
+  'scalable','reliable','maintainable','observable','resilient',
 ]);
 
-// Common abbreviation expansions — resume shorthand → full term
+// Abbreviation expansions — both directions handled
 const ABBREV_MAP: Record<string, string> = {
   js: 'javascript', ts: 'typescript', py: 'python',
-  qa: 'quality assurance', ci: 'continuous integration', cd: 'continuous delivery',
-  cicd: 'continuous integration continuous delivery',
-  sql: 'structured query language', api: 'application programming interface',
-  ui: 'user interface', ux: 'user experience', ml: 'machine learning',
-  ai: 'artificial intelligence', db: 'database', fe: 'frontend', be: 'backend',
-  e2e: 'end to end', oop: 'object oriented programming',
-  aws: 'amazon web services', gcp: 'google cloud platform',
-  etl: 'extract transform load', sdlc: 'software development lifecycle',
+  cicd: 'cicd', ci: 'ci', cd: 'cd',
+  sql: 'sql', api: 'api', ui: 'ui', ux: 'ux',
+  ml: 'ml', ai: 'ai', db: 'db',
+  e2e: 'e2e', oop: 'oop',
+  aws: 'aws', gcp: 'gcp', etl: 'etl',
 };
 
 function tokenize(text: string): Set<string> {
   const tokens = new Set<string>();
-  text.toLowerCase().split(/\W+/).forEach(tok => {
-    // Skip: empty, pure numbers, length < 3, stop words
-    if (!tok || /^\d+$/.test(tok) || tok.length < 3 || STOP_WORDS.has(tok)) return;
+  text.toLowerCase().split(/[\W_]+/).forEach(tok => {
+    if (!tok || /^\d+$/.test(tok) || tok.length < 2) return;
     tokens.add(tok);
     if (ABBREV_MAP[tok]) tokens.add(ABBREV_MAP[tok]);
   });
@@ -188,8 +213,8 @@ function tokenize(text: string): Set<string> {
 export function computeJDMatchScore(resume: Resume, jd: string): number {
   if (!jd.trim()) return 0;
 
-  const jdTokens = tokenize(jd);
-  if (jdTokens.size === 0) return 0;
+  const allJdTokens = tokenize(jd);
+  if (allJdTokens.size === 0) return 0;
 
   const resumeParts: string[] = [
     resume.summary ?? '',
@@ -206,6 +231,15 @@ export function computeJDMatchScore(resume: Resume, jd: string): number {
   ];
 
   const resumeTokens = tokenize(resumeParts.join(' '));
-  const matched = [...jdTokens].filter(t => resumeTokens.has(t)).length;
-  return Math.round((matched / jdTokens.size) * 100);
+
+  // Only score against JD tokens that are recognized tech/professional keywords
+  // OR that appear in the resume's own vocabulary — ignore all other JD noise
+  const meaningfulJdTokens = [...allJdTokens].filter(
+    t => TECH_KEYWORDS.has(t) || resumeTokens.has(t)
+  );
+
+  if (meaningfulJdTokens.length === 0) return 0;
+
+  const matched = meaningfulJdTokens.filter(t => resumeTokens.has(t)).length;
+  return Math.round((matched / meaningfulJdTokens.length) * 100);
 }
