@@ -73,6 +73,18 @@ const TemplateThumbnail: React.FC<{ value: string; selected: boolean }> = ({ val
   );
 };
 
+const ATSMatchBadge: React.FC<{ active: boolean }> = ({ active }) => (
+  <span className="flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full"
+    style={{ background: active ? '#16a34a15' : '#DC262615', color: active ? '#16a34a' : '#DC2626' }}>
+    <span style={{
+      width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+      background: active ? '#16a34a' : '#DC2626',
+      display: 'inline-block',
+    }} />
+    {active ? 'ATS Matching (Active)' : 'ATS Matching (Inactive)'}
+  </span>
+);
+
 const ExpandIcon = () => (
   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -175,12 +187,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
             Job Description
           </span>
           <div className="flex items-center gap-2">
-            {jd.trim() && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                style={{ background: '#2563EB15', color: '#2563EB' }}>
-                ATS Match active
-              </span>
-            )}
+            <ATSMatchBadge active={!!jd.trim()} />
             <button
               type="button"
               onClick={() => setExpanded(true)}
