@@ -96,10 +96,11 @@ export interface Resume {
   remote_preference?: 'Remote' | 'Hybrid' | 'Onsite';
 }
 
-export type Template = 'A' | 'B' | 'C';
+export type Template = 'A' | 'B' | 'C' | 'D';
 
 export const TEMPLATE_OPTIONS: { value: Template; label: string }[] = [
   { value: 'A', label: 'Classic ATS' },
   { value: 'B', label: 'Tech Impact' },
   { value: 'C', label: 'Modern Pro' },
+  { value: 'D', label: 'Prime ATS' },
 ];

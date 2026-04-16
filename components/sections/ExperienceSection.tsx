@@ -81,7 +81,7 @@ const ExperienceSection: React.FC<ExperienceSectionProps> = ({ workExperience, o
                 )}
               </div>
               <p className="text-xs text-slate-400 mb-2">
-                Mix paragraphs and bullets freely. Lines starting with •, -, * render as bullet points in the preview.
+                Lines starting with •, -, * render as bullet points. All other lines render as paragraphs.
               </p>
               <textarea
                 value={(item.achievements || []).join('\n')}

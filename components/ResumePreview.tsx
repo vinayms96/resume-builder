@@ -3,6 +3,7 @@ import { Resume, Template } from '../types';
 import TemplateA from './preview_templates/TemplateA';
 import TemplateB from './preview_templates/TemplateB';
 import TemplateC from './preview_templates/TemplateC';
+import TemplateD from './preview_templates/TemplateD';
 
 const A4_WIDTH_PX = 794;
 const A4_HEIGHT_PX = 1123;
@@ -37,6 +38,7 @@ const renderTemplate = (template: Template, data: Resume) => {
   switch (template) {
     case 'B': return <TemplateB data={data} />;
     case 'C': return <TemplateC data={data} />;
+    case 'D': return <TemplateD data={data} />;
     case 'A':
     default:  return <TemplateA data={data} />;
   }

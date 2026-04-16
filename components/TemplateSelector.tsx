@@ -12,6 +12,7 @@ const TEMPLATE_META: Record<string, { short: string; accent: string; desc: strin
   A: { short: 'Classic',    accent: '#1E3A5F', desc: 'ATS Universal' },
   B: { short: 'Tech',       accent: '#2563EB', desc: 'Tech / Data' },
   C: { short: 'Modern Pro', accent: '#EA580C', desc: 'Two-Column' },
+  D: { short: 'Prime ATS',   accent: '#1a5c96', desc: 'Blue Header' },
 };
 
 const TemplateThumbnail: React.FC<{ value: string; selected: boolean }> = ({ value, selected }) => {
@@ -19,22 +20,17 @@ const TemplateThumbnail: React.FC<{ value: string; selected: boolean }> = ({ val
   const bg = selected ? `${meta.accent}14` : '#ECEEF0';
 
   if (value === 'C') {
-    // Two-column thumbnail
     return (
-      <div className="w-full flex flex-col gap-0.5 p-1.5 rounded-md" style={{ background: bg, aspectRatio: '1/1.414' }}>
-        {/* Header */}
+      <div className="w-full flex flex-col gap-0.5 p-1.5 rounded-md" style={{ background: bg, height: '100%' }}>
         <div className="h-1.5 w-3/4 rounded-sm" style={{ background: meta.accent, opacity: 0.85 }} />
         <div className="h-1 w-1/2 rounded-sm" style={{ background: meta.accent, opacity: 0.5 }} />
         <div className="h-px w-full mt-0.5" style={{ background: meta.accent, opacity: 0.7 }} />
-        {/* Two columns */}
         <div className="flex gap-1 mt-0.5 flex-1">
-          {/* Left */}
           <div className="flex flex-col gap-0.5 flex-1">
             {[100, 90, 80, 70, 85, 75, 65, 80, 70, 60].map((w, i) => (
               <div key={i} className="h-0.5 rounded-sm" style={{ width: `${w}%`, background: '#CBD5E1' }} />
             ))}
           </div>
-          {/* Right */}
           <div className="flex flex-col gap-0.5" style={{ width: '38%' }}>
             <div className="h-px w-full" style={{ background: meta.accent, opacity: 0.5 }} />
             {[100, 80, 90, 70, 100, 60, 80].map((w, i) => (
@@ -51,9 +47,67 @@ const TemplateThumbnail: React.FC<{ value: string; selected: boolean }> = ({ val
     );
   }
 
-  // Single-column thumbnail (A and B)
+  if (value === 'D') {
+    // Prime ATS: big blue name left, photo top-right, blue section underlines
+    return (
+      <div className="w-full flex flex-col gap-0.5 p-1.5 rounded-md" style={{ background: bg, height: '100%' }}>
+        {/* Header row: name + photo */}
+        <div className="flex items-start justify-between gap-1">
+          <div className="flex flex-col gap-0.5 flex-1">
+            <div className="h-2 w-full rounded-sm" style={{ background: meta.accent, opacity: 0.9 }} />
+            <div className="h-1 w-2/3 rounded-sm" style={{ background: meta.accent, opacity: 0.45 }} />
+            <div className="h-0.5 w-full rounded-sm mt-0.5" style={{ background: '#94A3B8' }} />
+          </div>
+          <div className="rounded-sm flex-shrink-0" style={{ width: '10px', height: '10px', background: '#CBD5E1', border: `0.5px solid ${meta.accent}44` }} />
+        </div>
+        {/* Blue underlined sections */}
+        {[0, 1].map(s => (
+          <div key={s} className="mt-1">
+            <div className="h-px w-full mb-0.5" style={{ background: meta.accent, opacity: 0.6 }} />
+            {[100, 80, 70].map((w, i) => (
+              <div key={i} className="h-0.5 rounded-sm mb-0.5" style={{ width: `${w}%`, background: '#CBD5E1' }} />
+            ))}
+          </div>
+        ))}
+        {/* Skills grid */}
+        <div className="mt-0.5">
+          <div className="h-px w-full mb-0.5" style={{ background: meta.accent, opacity: 0.6 }} />
+          <div className="grid grid-cols-2 gap-0.5">
+            {[70, 55, 60, 45].map((w, i) => (
+              <div key={i} className="h-0.5 rounded-sm" style={{ width: `${w}%`, background: '#CBD5E1' }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Template B: bold name + thick indigo bottom border on header, indigo section labels
+  if (value === 'B') {
+    return (
+      <div className="w-full flex flex-col gap-0.5 p-1.5 rounded-md" style={{ background: bg, height: '100%' }}>
+        {/* Header with thick bottom border */}
+        <div style={{ borderBottom: `2px solid ${meta.accent}`, paddingBottom: '3px', marginBottom: '3px' }}>
+          <div className="h-2 w-full rounded-sm" style={{ background: '#1a1a1a', opacity: 0.85 }} />
+          <div className="h-1 w-1/2 rounded-sm mt-0.5" style={{ background: meta.accent, opacity: 0.7 }} />
+          <div className="h-0.5 w-3/4 rounded-sm mt-0.5" style={{ background: '#94A3B8' }} />
+        </div>
+        {/* Indigo-labeled sections */}
+        {[[100, 85, 75], [100, 90, 70, 60]].map((lines, s) => (
+          <div key={s} className="mt-1">
+            <div className="h-0.5 w-2/5 rounded-sm mb-0.5" style={{ background: meta.accent, opacity: 0.85 }} />
+            {lines.map((w, i) => (
+              <div key={i} className="h-0.5 rounded-sm mb-0.5" style={{ width: `${w}%`, background: '#CBD5E1' }} />
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Template A: minimal classic single-column
   return (
-    <div className="w-full flex flex-col gap-0.5 p-1.5 rounded-md" style={{ background: bg, aspectRatio: '1/1.414' }}>
+    <div className="w-full flex flex-col gap-0.5 p-1.5 rounded-md" style={{ background: bg, height: '100%' }}>
       <div className="h-1.5 w-full rounded-sm" style={{ background: meta.accent, opacity: 0.85 }} />
       <div className="h-1 w-2/3 rounded-sm mt-0.5" style={{ background: meta.accent, opacity: 0.5 }} />
       <div className="flex gap-0.5 mt-0.5">
@@ -122,7 +176,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
       style={{ borderBottom: '1px solid var(--color-surface-container)' }}
     >
       {/* Left: Template picker */}
-      <div className="flex flex-col flex-shrink-0 md:w-[220px]">
+      <div className="flex flex-col flex-shrink-0 md:w-[310px]">
         {/* Header row */}
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--color-outline)' }}>
@@ -161,6 +215,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
                   style={{
                     border: isSelected ? `2px solid ${meta.accent}` : '2px solid transparent',
                     boxShadow: isSelected ? `0 0 0 3px ${meta.accent}22` : 'none',
+                    height: '90px',
                   }}
                 >
                   <TemplateThumbnail value={opt.value} selected={isSelected} />
@@ -208,8 +263,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
           placeholder="Paste the job description here to calculate ATS keyword match score…"
           className="flex-1 resize-none text-xs rounded-lg p-2.5 w-full leading-relaxed"
           style={{
-            minHeight: '90px',
-            maxHeight: '120px',
+            minHeight: '110px',
+            maxHeight: '130px',
             border: '1px solid var(--color-surface-container)',
             background: 'var(--color-surface)',
             color: 'var(--color-on-surface)',

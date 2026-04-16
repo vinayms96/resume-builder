@@ -1,36 +1,6 @@
 import React from 'react';
 import { Resume } from '../../types';
-
-const BULLET_RE = /^[\s\u2022\u2023\u25E6\u2043\u2219\-\*–—▪▸►✓]+\s*/;
-
-function renderAchievements(achievements: string[], liClass: string, paraClass: string): React.ReactNode[] {
-  const nodes: React.ReactNode[] = [];
-  let pending: string[] = [];
-  const firstBlankIdx = achievements.findIndex(a => !a.trim());
-
-  const flushBullets = (key: number) => {
-    if (pending.length === 0) return;
-    nodes.push(
-      <ul key={key} className="list-disc list-outside pl-4 space-y-1.5">
-        {pending.map((b, i) => <li key={i} className={liClass}>{b}</li>)}
-      </ul>
-    );
-    pending = [];
-  };
-  achievements.forEach((ach, i) => {
-    if (!ach.trim()) { flushBullets(i); return; }
-    const hasBulletChar = BULLET_RE.test(ach);
-    const isParagraph = !hasBulletChar && firstBlankIdx !== -1 && i < firstBlankIdx;
-    if (isParagraph) {
-      flushBullets(i);
-      nodes.push(<p key={i} className={paraClass}>{ach}</p>);
-    } else {
-      pending.push(hasBulletChar ? ach.replace(BULLET_RE, '') : ach);
-    }
-  });
-  flushBullets(achievements.length);
-  return nodes;
-}
+import { renderAchievements } from '../../utils/renderAchievements';
 
 interface TemplateProps {
   data: Resume;
@@ -156,27 +126,6 @@ const TemplateB: React.FC<TemplateProps> = ({ data }) => {
           </section>
         )}
 
-        {/* Education */}
-        {data.education?.length > 0 && (
-          <section>
-            <SectionHeader title="Education" />
-            <div className="space-y-2">
-              {data.education.map((edu, i) => (
-                <div key={i} className="flex justify-between items-baseline">
-                  <div>
-                    <h3 className="font-semibold text-xs text-gray-900">
-                      {[edu.degree, edu.discipline].filter(Boolean).join(', ')}
-                    </h3>
-                    <p className="text-xs text-gray-600">{edu.institution}</p>
-                    {edu.gpa && <p className="text-xs text-gray-500">GPA: {edu.gpa}</p>}
-                  </div>
-                  <span className="text-xs text-gray-500 font-mono whitespace-nowrap ml-2">{edu.graduation_date}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
         {/* Certifications */}
         {data.certifications?.length > 0 && (
           <section>
@@ -197,6 +146,27 @@ const TemplateB: React.FC<TemplateProps> = ({ data }) => {
                   {cert.show_credential_url && cert.credential_url && (
                     <p className="text-xs text-indigo-600 mt-0.5" style={{ wordBreak: 'break-all' }}>{cert.credential_url}</p>
                   )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Education */}
+        {data.education?.length > 0 && (
+          <section>
+            <SectionHeader title="Education" />
+            <div className="space-y-2">
+              {data.education.map((edu, i) => (
+                <div key={i} className="flex justify-between items-baseline">
+                  <div>
+                    <h3 className="font-semibold text-xs text-gray-900">
+                      {[edu.degree, edu.discipline].filter(Boolean).join(', ')}
+                    </h3>
+                    <p className="text-xs text-gray-600">{edu.institution}</p>
+                    {edu.gpa && <p className="text-xs text-gray-500">GPA: {edu.gpa}</p>}
+                  </div>
+                  <span className="text-xs text-gray-500 font-mono whitespace-nowrap ml-2">{edu.graduation_date}</span>
                 </div>
               ))}
             </div>

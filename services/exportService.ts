@@ -1,5 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType, convertInchesToTwip, ShadingType } from 'docx';
 import { Resume, Template } from '../types';
+import { BULLET_RE } from '../utils/renderAchievements';
 
 // ========== PDF EXPORT ==========
 // Uses iframe + browser print for native A4 pagination.
@@ -70,6 +71,7 @@ const TMPL = {
   A: { nameColor: '111827', titleColor: '374151', secColor: '111827', borderColor: '9CA3AF', secAllCaps: true  as const },
   B: { nameColor: '1E1B4B', titleColor: '4338CA', secColor: '4338CA', borderColor: '4338CA', secAllCaps: true  as const },
   C: { nameColor: 'FFFFFF', titleColor: 'CBD5E1', secColor: '1E3A5F', borderColor: '1E3A5F', secAllCaps: false as const },
+  D: { nameColor: '1a5c96', titleColor: '555555', secColor: '1a5c96', borderColor: '1a5c96', secAllCaps: true  as const },
 };
 
 const makeSectionTitle = (text: string, tmpl: typeof TMPL[keyof typeof TMPL]) =>
@@ -86,6 +88,7 @@ export const exportAsDocx = (data: Resume, template?: Template | null): void => 
   const st = (text: string) => makeSectionTitle(text, tmpl);
   const isC = template === 'C';
   const isB = template === 'B';
+  const isD = template === 'D';
 
   // ── Section builders ────────────────────────────────────────────────────────
 
@@ -130,7 +133,7 @@ export const exportAsDocx = (data: Resume, template?: Template | null): void => 
 
   const summaryBlock: Paragraph[] = [];
   if (data.summary) {
-    const title = template === 'A' ? 'Professional Summary' : 'Summary';
+    const title = template === 'A' ? 'Professional Summary' : 'Summary';  // D also uses 'Summary'
     summaryBlock.push(st(title));
     summaryBlock.push(new Paragraph({ children: [new TextRun({ text: data.summary, size: 20 })] }));
   }
@@ -138,7 +141,7 @@ export const exportAsDocx = (data: Resume, template?: Template | null): void => 
   const skillsBlock: Paragraph[] = [];
   const hasSkills = (data.skills_core?.length || data.skills_tools?.length || data.skills_soft?.length);
   if (hasSkills) {
-    const skillsTitle = template === 'B' ? 'Technical Skills' : 'Skills';
+    const skillsTitle = (template === 'B' || template === 'D') ? 'Technical Skills' : 'Skills';
     skillsBlock.push(st(skillsTitle));
     if (data.skills_core?.length > 0)
       skillsBlock.push(new Paragraph({ children: [new TextRun({ text: 'Core: ', bold: true, size: 20 }), new TextRun({ text: data.skills_core.join(', '), size: 20 })] }));
@@ -150,7 +153,7 @@ export const exportAsDocx = (data: Resume, template?: Template | null): void => 
 
   const experienceBlock: Paragraph[] = [];
   if (data.work_experience?.length > 0) {
-    const expTitle = template === 'A' ? 'Work Experience' : 'Experience';
+    const expTitle = template === 'A' ? 'Work Experience' : isD ? 'Professional Experience' : 'Experience';
     experienceBlock.push(st(expTitle));
     data.work_experience.forEach((job, i) => {
       if (i > 0) {
@@ -172,7 +175,13 @@ export const exportAsDocx = (data: Resume, template?: Template | null): void => 
         spacing: { after: 180 },
       }));
       job.achievements?.filter(a => a.trim()).forEach(ach => {
-        experienceBlock.push(new Paragraph({ children: [new TextRun({ text: ach, size: 20 })], bullet: { level: 0 }, spacing: { after: 80 } }));
+        const isBullet = BULLET_RE.test(ach);
+        const text = isBullet ? ach.replace(BULLET_RE, '') : ach;
+        experienceBlock.push(new Paragraph({
+          children: [new TextRun({ text, size: 20 })],
+          ...(isBullet ? { bullet: { level: 0 } } : {}),
+          spacing: { after: 80 },
+        }));
       });
       if (job.tech_stack?.length > 0) {
         experienceBlock.push(new Paragraph({
@@ -314,17 +323,21 @@ export const exportAsDocx = (data: Resume, template?: Template | null): void => 
   }
 
   // ── Section ordering by template ────────────────────────────────────────────
+  // All templates: Education sits after Certifications, before Languages
   // Template C (Modern Pro): left col = Summary,Experience,Projects,Volunteering
-  //                          right col = Awards,Languages,Skills,Education,Certs
-  // Template B (Tech Impact): Summary,Skills,Experience,Projects,Education,Certs,Awards,Languages,Volunteering,Publications
-  // Template A (Classic ATS): Summary,Skills,Experience,Projects,Education,Certs,Awards,Languages,Volunteering,Publications
+  //                          right col = Awards,Languages,Skills,Certs,Education
+  // Template D (Prime ATS):  Summary,Experience,Skills,Projects,Certs,Education,Awards,Languages,Volunteering,Publications
+  // Template B (Tech Impact): Summary,Skills,Experience,Projects,Certs,Education,Awards,Languages,Volunteering,Publications
+  // Template A (Classic ATS): Summary,Skills,Experience,Projects,Certs,Education,Awards,Languages,Volunteering,Publications
 
   let ordered: Paragraph[][];
   if (template === 'C') {
-    ordered = [headerBlock, summaryBlock, experienceBlock, projectsBlock, volunteeringBlock, awardsBlock, languagesBlock, skillsBlock, educationBlock, certsBlock, publicationsBlock];
+    ordered = [headerBlock, summaryBlock, experienceBlock, projectsBlock, volunteeringBlock, awardsBlock, languagesBlock, skillsBlock, certsBlock, educationBlock, publicationsBlock];
+  } else if (template === 'D') {
+    ordered = [headerBlock, summaryBlock, experienceBlock, skillsBlock, projectsBlock, certsBlock, educationBlock, awardsBlock, languagesBlock, volunteeringBlock, publicationsBlock];
   } else {
-    // A and B share same order; B uses different section title strings (handled above)
-    ordered = [headerBlock, summaryBlock, skillsBlock, experienceBlock, projectsBlock, educationBlock, certsBlock, awardsBlock, languagesBlock, volunteeringBlock, publicationsBlock];
+    // A and B share same order
+    ordered = [headerBlock, summaryBlock, skillsBlock, experienceBlock, projectsBlock, certsBlock, educationBlock, awardsBlock, languagesBlock, volunteeringBlock, publicationsBlock];
   }
 
   const children = ordered.flat();
@@ -403,15 +416,6 @@ export const exportAsCsv = (data: Resume): void => {
     rows.push([`Project ${i + 1}`, 'Tech Stack', esc(proj.tech_stack?.join(', '))]);
   });
 
-  data.education?.forEach((edu, i) => {
-    rows.push([`Education ${i + 1}`, 'Degree', esc(edu.degree)]);
-    rows.push([`Education ${i + 1}`, 'Discipline', esc(edu.discipline)]);
-    rows.push([`Education ${i + 1}`, 'Institution', esc(edu.institution)]);
-    rows.push([`Education ${i + 1}`, 'Graduation', esc(edu.graduation_date)]);
-    rows.push([`Education ${i + 1}`, 'GPA', esc(edu.gpa)]);
-    if (edu.coursework_highlights?.length) rows.push([`Education ${i + 1}`, 'Coursework', esc(edu.coursework_highlights.join(', '))]);
-  });
-
   data.certifications?.forEach((cert, i) => {
     rows.push([`Certification ${i + 1}`, 'Name', esc(cert.name)]);
     rows.push([`Certification ${i + 1}`, 'Issuer', esc(cert.issuer)]);
@@ -421,6 +425,15 @@ export const exportAsCsv = (data: Resume): void => {
     if (cert.credential_id)  rows.push([`Certification ${i + 1}`, 'Show Credential ID', cert.show_credential_id ? 'true' : 'false']);
     if (cert.credential_url) rows.push([`Certification ${i + 1}`, 'Credential URL', esc(cert.credential_url)]);
     if (cert.credential_url) rows.push([`Certification ${i + 1}`, 'Show Credential URL', cert.show_credential_url ? 'true' : 'false']);
+  });
+
+  data.education?.forEach((edu, i) => {
+    rows.push([`Education ${i + 1}`, 'Degree', esc(edu.degree)]);
+    rows.push([`Education ${i + 1}`, 'Discipline', esc(edu.discipline)]);
+    rows.push([`Education ${i + 1}`, 'Institution', esc(edu.institution)]);
+    rows.push([`Education ${i + 1}`, 'Graduation', esc(edu.graduation_date)]);
+    rows.push([`Education ${i + 1}`, 'GPA', esc(edu.gpa)]);
+    if (edu.coursework_highlights?.length) rows.push([`Education ${i + 1}`, 'Coursework', esc(edu.coursework_highlights.join(', '))]);
   });
 
   data.awards?.forEach((a, i) => {

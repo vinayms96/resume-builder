@@ -24,7 +24,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ education, onFieldC
   };
 
   return (
-    <FormSection title="Education" badge={education.length || undefined}>
+    <FormSection title="Education" badge={education.length || undefined} defaultOpen={false}>
       <div className="space-y-4">
         {education.map((item, index) => (
           <div key={index} className="border border-slate-200 rounded-lg p-4 space-y-3 bg-slate-50 relative">

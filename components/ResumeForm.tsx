@@ -29,14 +29,14 @@ const ResumeForm: React.FC<ResumeFormProps> = ({ resumeData, onFieldChange, sele
         </p>
       </div>
 
-      <ContactSection resumeData={resumeData} onFieldChange={onFieldChange} showAvatarUpload={selectedTemplate === 'C'} />
+      <ContactSection resumeData={resumeData} onFieldChange={onFieldChange} showAvatarUpload={selectedTemplate === 'C' || selectedTemplate === 'D'} />
       <RoleSection resumeData={resumeData} onFieldChange={onFieldChange} />
       <SummarySection resumeData={resumeData} onFieldChange={onFieldChange} />
       <SkillsSection resumeData={resumeData} onFieldChange={onFieldChange} />
       <ExperienceSection workExperience={resumeData.work_experience} onFieldChange={onFieldChange} />
-      <EducationSection education={resumeData.education} onFieldChange={onFieldChange} />
       <ProjectsSection projects={resumeData.projects} onFieldChange={onFieldChange} />
       <CertificationsSection certifications={resumeData.certifications} onFieldChange={onFieldChange} />
+      <EducationSection education={resumeData.education} onFieldChange={onFieldChange} />
       <LanguagesSection languages={resumeData.languages} onFieldChange={onFieldChange} />
       <AwardsSection awards={resumeData.awards} onFieldChange={onFieldChange} />
     </div>
