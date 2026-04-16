@@ -194,7 +194,12 @@ const TemplateA: React.FC<TemplateProps> = ({ data }) => {
                   <div>
                     <span className="font-bold text-xs text-gray-900">{cert.name}</span>
                     <span className="text-xs text-gray-600"> — {cert.issuer}</span>
-                    {cert.credential_id && <span className="text-xs text-gray-500"> (ID: {cert.credential_id})</span>}
+                    {cert.show_credential_id && cert.credential_id && (
+                      <span className="text-xs text-gray-700"> · ID: {cert.credential_id}</span>
+                    )}
+                    {cert.show_credential_url && cert.credential_url && (
+                      <span className="text-xs text-gray-700"> · {cert.credential_url}</span>
+                    )}
                   </div>
                   <span className="text-xs text-gray-600 whitespace-nowrap ml-2 flex-shrink-0">{cert.issue_date}</span>
                 </div>

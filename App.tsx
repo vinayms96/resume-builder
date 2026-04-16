@@ -6,9 +6,9 @@ import ResumeForm from './components/ResumeForm';
 import ResumePreview from './components/ResumePreview';
 import TemplateSelector from './components/TemplateSelector';
 import { set } from 'lodash-es';
-import { exportAsPdf, exportAsDocx, exportAsCsv } from './services/exportService';
+import { exportAsPdf, exportAsDocx, exportAsCsv, exportAsJson } from './services/exportService';
+import { importFromFile } from './services/importService';
 import { computeATSScore, computeJDMatchScore } from './services/atsScore';
-import DevTools from './components/DevTools';
 import { saveResume, loadResume, clearResume, STORAGE_KEY, TEMPLATE_KEY, VIEW_MODE_KEY } from './services/storage';
 
 // Deep merge: user fields override sample; empty user fields fall back to sample
@@ -146,8 +146,22 @@ const App: React.FC = () => {
     localStorage.removeItem(VIEW_MODE_KEY);
   }, []);
 
-  const handleExport = useCallback((format: 'pdf' | 'docx' | 'csv') => {
-    // Export user data if they've entered anything; else export sample
+  const handleImport = useCallback(async (file: File) => {
+    try {
+      const data = await importFromFile(file);
+      setUserResumeData(data);
+      setViewMode('personal');
+      setSelectedTemplate(prev => {
+        if (prev) return prev;
+        const mapped = JOB_FAMILY_TEMPLATE_MAP[data.job_family as keyof typeof JOB_FAMILY_TEMPLATE_MAP];
+        return (mapped || 'A') as Template;
+      });
+    } catch (e) {
+      alert(`Import failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }, []);
+
+  const handleExport = useCallback((format: 'pdf' | 'docx' | 'csv' | 'json') => {
     const exportData = hasAnyData ? userResumeData : SAMPLE_RESUME_DATA;
     switch (format) {
       case 'pdf':
@@ -159,26 +173,32 @@ const App: React.FC = () => {
       case 'csv':
         exportAsCsv(exportData);
         break;
+      case 'json':
+        exportAsJson(exportData);
+        break;
     }
   }, [hasAnyData, userResumeData]);
 
   const [mobileTab, setMobileTab] = useState<'form' | 'preview'>('form');
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--color-surface)' }}>
-      <Header
-        onLoadSample={handleLoadSample}
-        onSwitchToPersonal={handleSwitchToPersonal}
-        onClearData={handleClearData}
-        onExport={handleExport}
-        hasData={hasAnyData}
-        viewMode={viewMode}
-        atsResult={atsResult}
-        jdMatchScore={jdMatchScore}
-      />
+    <div className="h-screen overflow-hidden flex flex-col" style={{ background: 'var(--color-surface)' }}>
+      <div className="flex-shrink-0">
+        <Header
+          onLoadSample={handleLoadSample}
+          onSwitchToPersonal={handleSwitchToPersonal}
+          onClearData={handleClearData}
+          onExport={handleExport}
+          onImport={handleImport}
+          hasData={hasAnyData}
+          viewMode={viewMode}
+          atsResult={atsResult}
+          jdMatchScore={jdMatchScore}
+        />
+      </div>
 
       {/* Mobile tab bar — hidden on lg+ */}
-      <div className="lg:hidden flex no-print" style={{ borderBottom: '1px solid var(--color-surface-container)', background: 'var(--color-surface-low)' }}>
+      <div className="lg:hidden flex-shrink-0 flex no-print" style={{ borderBottom: '1px solid var(--color-surface-container)', background: 'var(--color-surface-low)' }}>
         {(['form', 'preview'] as const).map(tab => (
           <button
             key={tab}
@@ -222,19 +242,6 @@ const App: React.FC = () => {
           />
         </div>
       </main>
-      {import.meta.env.DEV && (
-        <DevTools
-          onRestore={data => {
-            setUserResumeData(data);
-            // Ensure a template is selected so preview renders
-            setSelectedTemplate(prev => {
-              if (prev) return prev;
-              const mapped = JOB_FAMILY_TEMPLATE_MAP[data.job_family as keyof typeof JOB_FAMILY_TEMPLATE_MAP];
-              return (mapped || 'A') as Template;
-            });
-          }}
-        />
-      )}
     </div>
   );
 };

@@ -11,7 +11,7 @@ interface CertificationsSectionProps {
 
 const CertificationsSection: React.FC<CertificationsSectionProps> = ({ certifications, onFieldChange }) => {
 
-  const handleItemChange = (index: number, field: keyof Certification, value: string) => {
+  const handleItemChange = (index: number, field: keyof Certification, value: string | boolean) => {
     onFieldChange(`certifications.${index}.${field}`, value);
   };
 
@@ -37,8 +37,34 @@ const CertificationsSection: React.FC<CertificationsSectionProps> = ({ certifica
               <Input label="Issuing Organization" value={cert.issuer} onChange={e => handleItemChange(index, 'issuer', e.target.value)} placeholder="e.g. Amazon Web Services" />
               <Input label="Issue Date" value={cert.issue_date} onChange={e => handleItemChange(index, 'issue_date', e.target.value)} placeholder="e.g. Mar 2023" />
               <Input label="Expiry Date (optional)" value={cert.expiry_date || ''} onChange={e => handleItemChange(index, 'expiry_date', e.target.value)} placeholder="e.g. Mar 2026" />
-              <Input label="Credential ID (optional)" value={cert.credential_id || ''} onChange={e => handleItemChange(index, 'credential_id', e.target.value)} placeholder="e.g. ABC123XYZ" />
-              <Input label="Credential URL (optional)" value={cert.credential_url || ''} onChange={e => handleItemChange(index, 'credential_url', e.target.value)} placeholder="https://..." />
+              <div className="space-y-1.5">
+                <Input label="Credential ID (optional)" value={cert.credential_id || ''} onChange={e => handleItemChange(index, 'credential_id', e.target.value)} placeholder="e.g. ABC123XYZ" />
+                {cert.credential_id && (
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={!!cert.show_credential_id}
+                      onChange={e => handleItemChange(index, 'show_credential_id', e.target.checked)}
+                      className="w-3.5 h-3.5 accent-blue-600"
+                    />
+                    <span className="text-xs text-slate-500">Show ID in resume</span>
+                  </label>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Input label="Credential URL (optional)" value={cert.credential_url || ''} onChange={e => handleItemChange(index, 'credential_url', e.target.value)} placeholder="https://..." />
+                {cert.credential_url && (
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={!!cert.show_credential_url}
+                      onChange={e => handleItemChange(index, 'show_credential_url', e.target.checked)}
+                      className="w-3.5 h-3.5 accent-blue-600"
+                    />
+                    <span className="text-xs text-slate-500">Show link in resume</span>
+                  </label>
+                )}
+              </div>
             </div>
           </div>
         ))}

@@ -32,6 +32,8 @@ export interface Certification {
   expiry_date?: string;
   credential_id?: string;
   credential_url?: string;
+  show_credential_id?: boolean;
+  show_credential_url?: boolean;
 }
 
 export interface Language {

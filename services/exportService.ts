@@ -304,13 +304,16 @@ export const exportAsCsv = (data: Resume): void => {
   rows.push(['Contact', 'Email', esc(data.email)]);
   rows.push(['Contact', 'Phone', esc(data.phone)]);
   rows.push(['Contact', 'City', esc(data.city)]);
+  rows.push(['Contact', 'State/Region', esc(data.state_region)]);
   rows.push(['Contact', 'Country', esc(data.country)]);
   rows.push(['Contact', 'LinkedIn', esc(data.linkedin_url)]);
   rows.push(['Contact', 'Portfolio', esc(data.portfolio_url)]);
+  rows.push(['Contact', 'Personal Site', esc(data.personal_site_url)]);
 
   rows.push(['Role', 'Target Title', esc(data.target_role_title)]);
   rows.push(['Role', 'Seniority', esc(data.seniority_level)]);
   rows.push(['Role', 'Job Family', esc(data.job_family)]);
+  if (data.role_keywords?.length) rows.push(['Role', 'Keywords', esc(data.role_keywords.join(', '))]);
 
   rows.push(['Summary', 'Summary', esc(data.summary)]);
 
@@ -340,12 +343,18 @@ export const exportAsCsv = (data: Resume): void => {
     rows.push([`Education ${i + 1}`, 'Institution', esc(edu.institution)]);
     rows.push([`Education ${i + 1}`, 'Graduation', esc(edu.graduation_date)]);
     rows.push([`Education ${i + 1}`, 'GPA', esc(edu.gpa)]);
+    if (edu.coursework_highlights?.length) rows.push([`Education ${i + 1}`, 'Coursework', esc(edu.coursework_highlights.join(', '))]);
   });
 
   data.certifications?.forEach((cert, i) => {
     rows.push([`Certification ${i + 1}`, 'Name', esc(cert.name)]);
     rows.push([`Certification ${i + 1}`, 'Issuer', esc(cert.issuer)]);
     rows.push([`Certification ${i + 1}`, 'Date', esc(cert.issue_date)]);
+    if (cert.expiry_date)    rows.push([`Certification ${i + 1}`, 'Expiry Date', esc(cert.expiry_date)]);
+    if (cert.credential_id)  rows.push([`Certification ${i + 1}`, 'Credential ID', esc(cert.credential_id)]);
+    if (cert.credential_id)  rows.push([`Certification ${i + 1}`, 'Show Credential ID', cert.show_credential_id ? 'true' : 'false']);
+    if (cert.credential_url) rows.push([`Certification ${i + 1}`, 'Credential URL', esc(cert.credential_url)]);
+    if (cert.credential_url) rows.push([`Certification ${i + 1}`, 'Show Credential URL', cert.show_credential_url ? 'true' : 'false']);
   });
 
   data.awards?.forEach((a, i) => {
@@ -360,11 +369,45 @@ export const exportAsCsv = (data: Resume): void => {
     rows.push([`Language ${i + 1}`, 'Proficiency', esc(l.proficiency)]);
   });
 
+  data.publications?.forEach((pub, i) => {
+    rows.push([`Publication ${i + 1}`, 'Title', esc(pub.title)]);
+    rows.push([`Publication ${i + 1}`, 'Venue', esc(pub.venue)]);
+    rows.push([`Publication ${i + 1}`, 'Date', esc(pub.date)]);
+    if (pub.link)      rows.push([`Publication ${i + 1}`, 'URL', esc(pub.link)]);
+    if (pub.highlight) rows.push([`Publication ${i + 1}`, 'Highlight', esc(pub.highlight)]);
+  });
+
+  data.volunteering?.forEach((v, i) => {
+    rows.push([`Volunteering ${i + 1}`, 'Name', esc(v.name)]);
+    rows.push([`Volunteering ${i + 1}`, 'Organization', esc(v.organization)]);
+    rows.push([`Volunteering ${i + 1}`, 'Date', esc(v.date)]);
+    if (v.description) rows.push([`Volunteering ${i + 1}`, 'Description', esc(v.description)]);
+  });
+
+  if (data.work_authorization) rows.push(['Preferences', 'Work Authorization', esc(data.work_authorization)]);
+  if (data.clearance)          rows.push(['Preferences', 'Clearance', esc(data.clearance)]);
+  if (data.relocation != null) rows.push(['Preferences', 'Relocation', data.relocation ? 'true' : 'false']);
+  if (data.remote_preference)  rows.push(['Preferences', 'Remote Preference', esc(data.remote_preference)]);
+
   const csv = rows.map(r => r.join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'resume_data.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+};
+
+// ========== JSON EXPORT ==========
+
+export const exportAsJson = (data: Resume): void => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const name = data.full_name?.trim().replace(/\s+/g, '_') || 'resume';
+  a.download = `${name}_resume.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

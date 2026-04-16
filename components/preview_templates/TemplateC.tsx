@@ -171,7 +171,7 @@ const TemplateC: React.FC<{ data: Resume }> = ({ data }) => {
       {/* ── Two-column body ─────────────────────────────── */}
       <div className="flex gap-5">
 
-        {/* Left column — Summary, Experience, Education */}
+        {/* Left column — Summary, Experience, Projects */}
         <div className="flex-1 min-w-0 space-y-4">
 
           {data.summary && (
@@ -216,18 +216,28 @@ const TemplateC: React.FC<{ data: Resume }> = ({ data }) => {
             </section>
           )}
 
-          {data.education?.length > 0 && (
+          {data.projects?.length > 0 && (
             <section>
-              <SectionHeader title="Education" />
-              <div className="space-y-2">
-                {data.education.map((edu, i) => (
-                  <div key={i}>
-                    <h3 className="font-bold text-xs text-gray-900">
-                      {[edu.degree, edu.discipline].filter(Boolean).join(', ')}
-                    </h3>
-                    <p className="text-xs font-semibold" style={{ color: '#EA580C' }}>{edu.institution}</p>
-                    <p className="text-xs text-gray-400">{edu.graduation_date}</p>
-                    {edu.gpa && <p className="text-xs text-gray-500">GPA: {edu.gpa}</p>}
+              <SectionHeader title="Projects" />
+              <div className="space-y-4">
+                {data.projects.map((proj, i) => (
+                  <div key={i} data-no-break="true" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                    <h3 className="font-bold text-sm text-gray-900 leading-snug">{proj.name}</h3>
+                    {proj.link && (
+                      <p className="text-xs mt-0.5" style={{ color: '#EA580C', wordBreak: 'break-all' }}>{proj.link}</p>
+                    )}
+                    {proj.description?.length > 0 && (
+                      <ul className="list-disc list-outside pl-4 mt-1 space-y-1">
+                        {proj.description.map((d, j) => (
+                          <li key={j} className="text-xs text-gray-700">{d}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {proj.tech_stack?.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-1.5">
+                        <span className="font-semibold">Tech:</span> {proj.tech_stack.join(', ')}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -251,7 +261,7 @@ const TemplateC: React.FC<{ data: Resume }> = ({ data }) => {
           )}
         </div>
 
-        {/* Right column — Achievements, Languages, Skills, Projects, Certs */}
+        {/* Right column — Achievements, Languages, Skills, Education, Certs */}
         <div className="flex-shrink-0 space-y-4" style={{ width: 220 }}>
 
           {data.awards?.length > 0 && (
@@ -320,28 +330,18 @@ const TemplateC: React.FC<{ data: Resume }> = ({ data }) => {
             </section>
           )}
 
-          {data.projects?.length > 0 && (
+          {data.education?.length > 0 && (
             <section>
-              <SectionHeader title="Projects" />
-              <div className="space-y-3">
-                {data.projects.map((proj, i) => (
-                  <div key={i} data-no-break="true" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
-                    <p className="text-xs font-bold text-gray-900">{proj.name}</p>
-                    {proj.link && (
-                      <p className="text-xs mt-0.5" style={{ color: '#EA580C', wordBreak: 'break-all' }}>{proj.link}</p>
-                    )}
-                    {proj.description?.length > 0 && (
-                      <ul className="list-disc list-outside pl-3 mt-1 space-y-1">
-                        {proj.description.map((d, j) => (
-                          <li key={j} className="text-xs text-gray-700">{d}</li>
-                        ))}
-                      </ul>
-                    )}
-                    {proj.tech_stack?.length > 0 && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        <span className="font-semibold">Tech:</span> {proj.tech_stack.join(', ')}
-                      </p>
-                    )}
+              <SectionHeader title="Education" />
+              <div className="space-y-2">
+                {data.education.map((edu, i) => (
+                  <div key={i}>
+                    <h3 className="font-bold text-xs text-gray-900">
+                      {[edu.degree, edu.discipline].filter(Boolean).join(', ')}
+                    </h3>
+                    <p className="text-xs font-semibold" style={{ color: '#EA580C' }}>{edu.institution}</p>
+                    <p className="text-xs text-gray-400">{edu.graduation_date}</p>
+                    {edu.gpa && <p className="text-xs text-gray-500">GPA: {edu.gpa}</p>}
                   </div>
                 ))}
               </div>
@@ -358,6 +358,12 @@ const TemplateC: React.FC<{ data: Resume }> = ({ data }) => {
                     <p className="text-xs text-gray-500">
                       {cert.issuer}{cert.issue_date ? ` · ${cert.issue_date}` : ''}
                     </p>
+                    {cert.show_credential_id && cert.credential_id && (
+                      <p className="text-xs text-gray-700 mt-0.5" style={{ wordBreak: 'break-all' }}>ID: {cert.credential_id}</p>
+                    )}
+                    {cert.show_credential_url && cert.credential_url && (
+                      <p className="text-xs mt-0.5" style={{ color: '#EA580C', wordBreak: 'break-all' }}>{cert.credential_url}</p>
+                    )}
                   </div>
                 ))}
               </div>

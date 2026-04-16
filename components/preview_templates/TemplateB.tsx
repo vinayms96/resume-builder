@@ -135,7 +135,7 @@ const TemplateB: React.FC<TemplateProps> = ({ data }) => {
                   <div>
                     <h3 className="font-semibold text-xs text-gray-900">{proj.name}</h3>
                     {proj.link && (
-                      <p className="text-xs text-gray-500 mt-0.5" style={{ wordBreak: 'break-all' }}>{proj.link}</p>
+                      <p className="text-xs text-indigo-600 mt-0.5" style={{ wordBreak: 'break-all' }}>{proj.link}</p>
                     )}
                   </div>
                   {proj.description?.length > 0 && (
@@ -183,13 +183,20 @@ const TemplateB: React.FC<TemplateProps> = ({ data }) => {
             <SectionHeader title="Certifications" />
             <div className="space-y-1.5">
               {data.certifications.map((cert, i) => (
-                <div key={i} className="flex justify-between items-baseline">
-                  <div>
-                    <span className="font-medium text-xs text-gray-900">{cert.name}</span>
-                    <span className="text-xs text-gray-500"> — {cert.issuer}</span>
-                    {cert.credential_id && <span className="text-xs text-gray-400"> (ID: {cert.credential_id})</span>}
+                <div key={i}>
+                  <div className="flex justify-between items-baseline">
+                    <div>
+                      <span className="font-medium text-xs text-gray-900">{cert.name}</span>
+                      <span className="text-xs text-gray-500"> — {cert.issuer}</span>
+                    </div>
+                    <span className="text-xs text-gray-500 font-mono whitespace-nowrap ml-2">{cert.issue_date}</span>
                   </div>
-                  <span className="text-xs text-gray-500 font-mono whitespace-nowrap ml-2">{cert.issue_date}</span>
+                  {cert.show_credential_id && cert.credential_id && (
+                    <p className="text-xs text-gray-700 mt-0.5" style={{ wordBreak: 'break-all' }}>ID: {cert.credential_id}</p>
+                  )}
+                  {cert.show_credential_url && cert.credential_url && (
+                    <p className="text-xs text-indigo-600 mt-0.5" style={{ wordBreak: 'break-all' }}>{cert.credential_url}</p>
+                  )}
                 </div>
               ))}
             </div>

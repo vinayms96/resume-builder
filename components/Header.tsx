@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ATSResult } from '../services/atsScore';
+import { Resume } from '../types';
 
 interface HeaderProps {
   onLoadSample: () => void;
   onSwitchToPersonal: () => void;
   onClearData: () => void;
-  onExport: (format: 'pdf' | 'docx' | 'csv') => void;
+  onExport: (format: 'pdf' | 'docx' | 'csv' | 'json') => void;
+  onImport: (file: File) => void;
   hasData: boolean;
   viewMode: 'personal' | 'sample';
   atsResult: ATSResult;
@@ -71,6 +73,18 @@ const exportOptions = [
     ),
     color: 'text-emerald-500',
   },
+  {
+    fmt: 'json' as const,
+    label: 'JSON',
+    desc: 'Backup / import',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2M7 8H5a2 2 0 00-2 2v6a2 2 0 002 2h2m5-10v10M9 8l3-3 3 3" />
+      </svg>
+    ),
+    color: 'text-amber-500',
+  },
 ];
 
 function scoreColor(s: number): string {
@@ -80,15 +94,33 @@ function scoreColor(s: number): string {
   return '#DC2626';
 }
 
-const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onClearData, onExport, hasData, viewMode, atsResult, jdMatchScore }) => {
+// Brighter variants for use on dark navy header background
+const BRIGHT_COLOR: Record<string, string> = {
+  '#059669': '#34D399',
+  '#2563EB': '#60A5FA',
+  '#D97706': '#FCD34D',
+  '#DC2626': '#F87171',
+};
+
+const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onClearData, onExport, onImport, hasData, viewMode, atsResult, jdMatchScore }) => {
   const [isExportOpen,  setIsExportOpen]  = useState(false);
   const [isATSOpen,     setIsATSOpen]     = useState(false);
   const [activeTip,     setActiveTip]     = useState<number | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [importError, setImportError] = useState('');
 
   const exportRef = useRef<HTMLDivElement>(null);
   const atsRef    = useRef<HTMLDivElement>(null);
   const clearRef  = useRef<HTMLDivElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
+
+  const handleImportClick = () => { setImportError(''); importRef.current?.click(); };
+  const handleImportChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    onImport(file);
+    e.target.value = '';
+  };
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -145,21 +177,21 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
             type="button"
             onClick={() => { setIsATSOpen(o => !o); setActiveTip(null); }}
             className="flex items-center gap-2 px-3 rounded-md text-xs font-semibold transition-all cursor-pointer"
-            style={{ height: '32px', background: `${displayColor}30`, color: displayColor, border: `1px solid ${displayColor}88` }}
-            onMouseEnter={e => (e.currentTarget.style.background = `${displayColor}45`)}
-            onMouseLeave={e => (e.currentTarget.style.background = `${displayColor}30`)}
+            style={{ height: '32px', background: `${BRIGHT_COLOR[displayColor] ?? displayColor}28`, color: BRIGHT_COLOR[displayColor] ?? displayColor, border: `1px solid ${BRIGHT_COLOR[displayColor] ?? displayColor}99` }}
+            onMouseEnter={e => (e.currentTarget.style.background = `${BRIGHT_COLOR[displayColor] ?? displayColor}40`)}
+            onMouseLeave={e => (e.currentTarget.style.background = `${BRIGHT_COLOR[displayColor] ?? displayColor}28`)}
           >
             <span className="hidden sm:inline" style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.04em' }}>
               {hasJD ? 'ATS Match' : 'Profile Score'}
             </span>
             <span className="hidden sm:inline" style={{ color: 'rgba(255,255,255,0.25)' }}>·</span>
-            <span className="flex items-center justify-center w-5 h-5 rounded-full text-white font-bold"
-              style={{ background: displayColor, fontSize: '10px' }}>
+            <span className="flex items-center justify-center w-5 h-5 rounded-full font-bold"
+              style={{ background: BRIGHT_COLOR[displayColor] ?? displayColor, color: '#0f172a', fontSize: '10px' }}>
               {displayScore}
             </span>
             <span className="hidden sm:inline" style={{ fontWeight: 700 }}>{displayLabel}</span>
             <span className="hidden sm:block w-16 h-1.5 rounded-full" style={{ position: 'relative', background: 'rgba(255,255,255,0.15)' }}>
-              <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${displayScore}%`, background: displayColor }} />
+              <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${displayScore}%`, background: BRIGHT_COLOR[displayColor] ?? displayColor }} />
             </span>
             <span className="hidden sm:inline" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px' }}>/100</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
@@ -171,11 +203,9 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
           {/* ATS Popup */}
           {isATSOpen && (
             <div
-              className="fixed sm:absolute left-2 right-2 sm:left-0 sm:right-auto top-[60px] sm:top-auto sm:mt-3 rounded-2xl z-50"
+              className="fixed sm:absolute left-2 right-2 sm:left-0 sm:right-auto sm:w-[460px] top-[60px] sm:top-auto sm:mt-3 rounded-2xl z-50"
               style={{
-                width: undefined,
                 maxWidth: '500px',
-                margin: '0 auto',
                 background: '#FFFFFF',
                 boxShadow: '0 24px 60px rgba(2,36,72,0.28), 0 2px 8px rgba(0,0,0,0.08)',
                 border: `1.5px solid ${color}33`,
@@ -185,41 +215,47 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
               <div className="px-5 py-4" style={{ borderBottom: `1.5px solid #F1F5F9`, background: `${displayColor}08`, borderRadius: '16px 16px 0 0' }}>
                 {/* ATS Match row — shown only when JD present */}
                 {hasJD && (
-                  <div className="flex items-center gap-3 mb-3 pb-3" style={{ borderBottom: '1px solid #F1F5F9' }}>
+                  <div className="flex items-start gap-3 mb-3 pb-3" style={{ borderBottom: '1px solid #F1F5F9' }}>
                     <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
                       style={{ background: displayColor, fontSize: '18px', boxShadow: `0 4px 12px ${displayColor}44` }}>
                       {jdMatchScore}
                     </div>
-                    <div>
-                      <div className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: '#94A3B8' }}>ATS Match</div>
-                      <div className="text-base font-bold" style={{ color: displayColor }}>{displayLabel}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline justify-between gap-2 mb-2">
+                        <div>
+                          <div className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: '#94A3B8' }}>ATS Match</div>
+                          <div className="text-base font-bold" style={{ color: displayColor }}>{displayLabel}</div>
+                        </div>
+                        <span className="text-sm font-bold flex-shrink-0" style={{ color: '#64748B' }}>
+                          {jdMatchScore}<span className="text-xs font-normal text-gray-400">/100</span>
+                        </span>
+                      </div>
+                      <div className="h-2.5 rounded-full w-full" style={{ background: '#E2E8F0', overflow: 'hidden' }}>
+                        <div className="h-full rounded-full" style={{ width: `${jdMatchScore}%`, background: displayColor, transition: 'width 0.6s ease' }} />
+                      </div>
                     </div>
-                    <div className="flex-1 h-2.5 rounded-full ml-2" style={{ background: '#E2E8F0' }}>
-                      <div className="h-full rounded-full" style={{ width: `${jdMatchScore}%`, background: displayColor, transition: 'width 0.6s ease' }} />
-                    </div>
-                    <span className="text-sm font-bold flex-shrink-0" style={{ color: '#64748B' }}>
-                      {jdMatchScore}<span className="text-xs font-normal text-gray-400">/100</span>
-                    </span>
                   </div>
                 )}
                 {/* Profile Score row — always shown */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
                     style={{ background: color, fontSize: '18px', boxShadow: `0 4px 12px ${color}44` }}>
                     {total}
                   </div>
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: '#94A3B8' }}>
-                      Profile Score
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-2 mb-2">
+                      <div>
+                        <div className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: '#94A3B8' }}>Profile Score</div>
+                        <div className="text-base font-bold" style={{ color }}>{label}</div>
+                      </div>
+                      <span className="text-sm font-bold flex-shrink-0" style={{ color: '#64748B' }}>
+                        {total}<span className="text-xs font-normal text-gray-400">/100</span>
+                      </span>
                     </div>
-                    <div className="text-base font-bold" style={{ color }}>{label}</div>
+                    <div className="h-2.5 rounded-full w-full" style={{ background: '#E2E8F0', overflow: 'hidden' }}>
+                      <div className="h-full rounded-full" style={{ width: `${total}%`, background: color, transition: 'width 0.6s ease' }} />
+                    </div>
                   </div>
-                  <div className="flex-1 h-2.5 rounded-full ml-2" style={{ background: '#E2E8F0' }}>
-                    <div className="h-full rounded-full" style={{ width: `${total}%`, background: color, transition: 'width 0.6s ease' }} />
-                  </div>
-                  <span className="text-sm font-bold flex-shrink-0" style={{ color: '#64748B' }}>
-                    {total}<span className="text-xs font-normal text-gray-400">/100</span>
-                  </span>
                 </div>
               </div>
 
@@ -383,6 +419,29 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
             )}
           </div>
         )}
+
+        {/* Import */}
+        <input
+          ref={importRef}
+          type="file"
+          accept=".json,.csv"
+          className="hidden"
+          onChange={handleImportChange}
+        />
+        <button
+          onClick={handleImportClick}
+          className="flex items-center gap-1.5 px-3 text-xs font-semibold text-white rounded-md transition-all cursor-pointer"
+          style={{ height: '32px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.15)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+          title="Import resume from JSON or CSV"
+        >
+          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span className="hidden sm:inline">Import</span>
+        </button>
 
         {/* Export dropdown */}
         <div className="relative" ref={exportRef}>

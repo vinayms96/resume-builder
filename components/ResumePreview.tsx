@@ -49,11 +49,30 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ previewData, selectedTemp
   useLayoutEffect(() => {
     const el = panelRef.current;
     if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setScale(Math.min(1, entry.contentRect.width / A4_WIDTH_PX));
+
+    const updateScale = () => {
+      const w = el.getBoundingClientRect().width;
+      if (w > 0) setScale(Math.min(1, w / A4_WIDTH_PX));
+    };
+
+    const resizeObserver = new ResizeObserver(([entry]) => {
+      const w = entry.contentRect.width;
+      if (w > 0) setScale(Math.min(1, w / A4_WIDTH_PX));
     });
-    observer.observe(el);
-    return () => observer.disconnect();
+    resizeObserver.observe(el);
+
+    // Fallback: watch parent class changes (mobile tab switch: hidden → flex)
+    const parent = el.parentElement;
+    let mutationObserver: MutationObserver | null = null;
+    if (parent) {
+      mutationObserver = new MutationObserver(updateScale);
+      mutationObserver.observe(parent, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+      mutationObserver?.disconnect();
+    };
   }, []);
 
   const scaledHeight = A4_HEIGHT_PX * scale;
