@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ATSResult } from '../services/atsScore';
+import { ATSResult, JDMatchResult } from '../services/atsScore';
 import { Resume } from '../types';
 
 interface HeaderProps {
@@ -11,7 +11,7 @@ interface HeaderProps {
   hasData: boolean;
   viewMode: 'personal' | 'sample';
   atsResult: ATSResult;
-  jdMatchScore?: number;
+  jdMatchResult?: JDMatchResult;
 }
 
 const GRADE_COLOR: Record<string, string> = {
@@ -102,12 +102,13 @@ const BRIGHT_COLOR: Record<string, string> = {
   '#DC2626': '#F87171',
 };
 
-const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onClearData, onExport, onImport, hasData, viewMode, atsResult, jdMatchScore }) => {
+const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onClearData, onExport, onImport, hasData, viewMode, atsResult, jdMatchResult }) => {
   const [isExportOpen,  setIsExportOpen]  = useState(false);
   const [isATSOpen,     setIsATSOpen]     = useState(false);
   const [activeTip,     setActiveTip]     = useState<number | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [importError, setImportError] = useState('');
+  const [jdGapOpen,    setJdGapOpen]    = useState(false);
 
   const exportRef = useRef<HTMLDivElement>(null);
   const atsRef    = useRef<HTMLDivElement>(null);
@@ -139,11 +140,12 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
   const label      = GRADE_LABEL[grade]    ?? 'Needs Work';
 
   // When JD is present, button shows ATS Match; otherwise profile completeness
-  const hasJD        = jdMatchScore !== undefined;
-  const displayScore = hasJD ? jdMatchScore! : total;
-  const displayColor = hasJD ? scoreColor(jdMatchScore!) : color;
+  const hasJD        = jdMatchResult !== undefined;
+  const jdScore      = jdMatchResult?.score ?? 0;
+  const displayScore = hasJD ? jdScore : total;
+  const displayColor = hasJD ? scoreColor(jdScore) : color;
   const displayLabel = hasJD
-    ? (jdMatchScore! >= 75 ? 'Strong Match' : jdMatchScore! >= 50 ? 'Partial Match' : 'Low Match')
+    ? (jdScore >= 75 ? 'Strong Match' : jdScore >= 50 ? 'Partial Match' : 'Low Match')
     : label;
 
   return (
@@ -203,9 +205,10 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
           {/* ATS Popup */}
           {isATSOpen && (
             <div
-              className="fixed sm:absolute left-2 right-2 sm:left-0 sm:right-auto sm:w-[460px] top-[60px] sm:top-auto sm:mt-3 rounded-2xl z-50"
+              className="fixed sm:absolute left-2 right-2 sm:left-0 sm:right-auto sm:w-[460px] top-[60px] sm:top-auto sm:mt-3 rounded-2xl z-50 overflow-y-auto"
               style={{
                 maxWidth: '500px',
+                maxHeight: 'calc(100vh - 80px)',
                 background: '#FFFFFF',
                 boxShadow: '0 24px 60px rgba(2,36,72,0.28), 0 2px 8px rgba(0,0,0,0.08)',
                 border: `1.5px solid ${color}33`,
@@ -218,7 +221,7 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
                   <div className="flex items-start gap-3 mb-3 pb-3" style={{ borderBottom: '1px solid #F1F5F9' }}>
                     <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
                       style={{ background: displayColor, fontSize: '18px', boxShadow: `0 4px 12px ${displayColor}44` }}>
-                      {jdMatchScore}
+                      {jdScore}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline justify-between gap-2 mb-2">
@@ -227,15 +230,105 @@ const Header: React.FC<HeaderProps> = ({ onLoadSample, onSwitchToPersonal, onCle
                           <div className="text-base font-bold" style={{ color: displayColor }}>{displayLabel}</div>
                         </div>
                         <span className="text-sm font-bold flex-shrink-0" style={{ color: '#64748B' }}>
-                          {jdMatchScore}<span className="text-xs font-normal text-gray-400">/100</span>
+                          {jdScore}<span className="text-xs font-normal text-gray-400">/100</span>
                         </span>
                       </div>
                       <div className="h-2.5 rounded-full w-full" style={{ background: '#E2E8F0', overflow: 'hidden' }}>
-                        <div className="h-full rounded-full" style={{ width: `${jdMatchScore}%`, background: displayColor, transition: 'width 0.6s ease' }} />
+                        <div className="h-full rounded-full" style={{ width: `${jdScore}%`, background: displayColor, transition: 'width 0.6s ease' }} />
                       </div>
                     </div>
                   </div>
                 )}
+
+                {/* JD Gap Analysis — sits between ATS Match and Profile Score */}
+                {hasJD && jdMatchResult && (
+                  <div className="mb-3 rounded-xl overflow-hidden" style={{ border: '1px solid #F1F5F9' }}>
+                    <button
+                      type="button"
+                      onClick={() => setJdGapOpen(o => !o)}
+                      className="w-full flex items-center justify-between px-3 text-xs font-semibold transition-colors hover:bg-slate-50"
+                      style={{ background: '#F8FAFC', height: '36px', minHeight: '36px' }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={displayColor} strokeWidth="2.5">
+                          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <span style={{ color: '#1E293B' }}>JD Gap Analysis</span>
+                        {jdMatchResult.missingKeywords.length > 0 ? (
+                          <span className="px-1.5 py-0.5 rounded-full text-xs font-bold"
+                            style={{ background: '#FEE2E2', color: '#DC2626' }}>
+                            {jdMatchResult.missingKeywords.length} missing
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded-full text-xs font-bold"
+                            style={{ background: '#D1FAE5', color: '#059669' }}>
+                            Full match
+                          </span>
+                        )}
+                      </div>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5"
+                        style={{ transform: jdGapOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 150ms', flexShrink: 0 }}>
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </button>
+
+                    {jdGapOpen && (
+                      <div className="px-3 pt-3 pb-2 space-y-3" style={{ background: '#FFFFFF' }}>
+                        {jdMatchResult.missingKeywords.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold mb-1.5" style={{ color: '#64748B' }}>MISSING FROM RESUME</p>
+                            <div className="flex flex-wrap gap-1">
+                              {jdMatchResult.missingKeywords.slice(0, 24).map(kw => (
+                                <span key={kw} className="px-2 py-0.5 rounded-full text-xs font-medium"
+                                  style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}>
+                                  {kw}
+                                </span>
+                              ))}
+                              {jdMatchResult.missingKeywords.length > 24 && (
+                                <span className="px-2 py-0.5 text-xs" style={{ color: '#94A3B8' }}>
+                                  +{jdMatchResult.missingKeywords.length - 24} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {jdMatchResult.matchedKeywords.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold mb-1.5" style={{ color: '#64748B' }}>MATCHED</p>
+                            <div className="flex flex-wrap gap-1">
+                              {jdMatchResult.matchedKeywords.slice(0, 16).map(kw => (
+                                <span key={kw} className="px-2 py-0.5 rounded-full text-xs font-medium"
+                                  style={{ background: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0' }}>
+                                  {kw}
+                                </span>
+                              ))}
+                              {jdMatchResult.matchedKeywords.length > 16 && (
+                                <span className="px-2 py-0.5 text-xs" style={{ color: '#94A3B8' }}>
+                                  +{jdMatchResult.matchedKeywords.length - 16} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {jdMatchResult.suggestions.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold mb-1.5" style={{ color: '#64748B' }}>SUGGESTIONS</p>
+                            <div className="space-y-1">
+                              {jdMatchResult.suggestions.map((s, i) => (
+                                <div key={i} className="flex items-start gap-1.5 text-xs px-2 py-1.5 rounded-lg"
+                                  style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#475569' }}>
+                                  <span className="font-bold flex-shrink-0" style={{ color: displayColor }}>→</span>
+                                  {s}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Profile Score row — always shown */}
                 <div className="flex items-start gap-3">
                   <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"

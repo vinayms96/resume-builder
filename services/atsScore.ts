@@ -210,11 +210,63 @@ function tokenize(text: string): Set<string> {
   return tokens;
 }
 
-export function computeJDMatchScore(resume: Resume, jd: string): number {
-  if (!jd.trim()) return 0;
+export interface JDMatchResult {
+  score: number;
+  matchedKeywords: string[];
+  missingKeywords: string[];
+  suggestions: string[];
+}
+
+const KW_GROUPS: Record<string, Set<string>> = {
+  'Testing Tools': new Set(['selenium','cypress','playwright','jest','mocha','jasmine','junit','testng','pytest','cucumber','appium','webdriverio','testcafe','robotframework','karate','postman','soapui']),
+  'Languages': new Set(['python','javascript','typescript','java','kotlin','scala','golang','ruby','swift','php','rust','bash','shell','sql','graphql','html','css','r','groovy','perl']),
+  'Cloud & DevOps': new Set(['aws','azure','gcp','kubernetes','docker','terraform','ansible','jenkins','github','gitlab','circleci','argocd','helm','prometheus','grafana','datadog','serverless','lambda']),
+  'Frameworks': new Set(['react','angular','vue','nextjs','django','flask','fastapi','spring','express','rails','laravel','dotnet','nodejs','nestjs']),
+  'Databases': new Set(['postgresql','mysql','mongodb','redis','cassandra','dynamodb','elasticsearch','oracle','mssql','firestore','neo4j']),
+  'Methodologies': new Set(['agile','scrum','kanban','bdd','tdd','atdd','devops','sre','cicd','e2e','regression','automation','manual','performance','load','api','rest','soap','grpc']),
+};
+
+function generateSuggestions(missing: string[]): string[] {
+  const suggestions: string[] = [];
+  const grouped: Record<string, string[]> = {};
+
+  for (const kw of missing) {
+    for (const [group, set] of Object.entries(KW_GROUPS)) {
+      if (set.has(kw)) {
+        grouped[group] = grouped[group] ?? [];
+        grouped[group].push(kw);
+        break;
+      }
+    }
+  }
+
+  for (const [group, kws] of Object.entries(grouped)) {
+    const sample = kws.slice(0, 4).join(', ');
+    if (group === 'Testing Tools')
+      suggestions.push(`Add missing test tools to Skills: ${sample}`);
+    else if (group === 'Languages')
+      suggestions.push(`Include language proficiency: ${sample}`);
+    else if (group === 'Cloud & DevOps')
+      suggestions.push(`Highlight cloud/DevOps experience: ${sample}`);
+    else if (group === 'Methodologies')
+      suggestions.push(`Use JD methodology keywords in summary/bullets: ${sample}`);
+    else
+      suggestions.push(`Add to Skills or projects: ${sample} (${group})`);
+  }
+
+  if (missing.length > 5 && suggestions.length < 3)
+    suggestions.push('Mirror exact JD terminology in your summary and achievement bullets');
+  if (missing.length > 10)
+    suggestions.push('Consider a targeted summary paragraph that echoes JD language directly');
+
+  return suggestions.slice(0, 5);
+}
+
+export function computeJDMatchScore(resume: Resume, jd: string): JDMatchResult {
+  if (!jd.trim()) return { score: 0, matchedKeywords: [], missingKeywords: [], suggestions: [] };
 
   const allJdTokens = tokenize(jd);
-  if (allJdTokens.size === 0) return 0;
+  if (allJdTokens.size === 0) return { score: 0, matchedKeywords: [], missingKeywords: [], suggestions: [] };
 
   const resumeParts: string[] = [
     resume.summary ?? '',
@@ -232,14 +284,20 @@ export function computeJDMatchScore(resume: Resume, jd: string): number {
 
   const resumeTokens = tokenize(resumeParts.join(' '));
 
-  // Only score against JD tokens that are recognized tech/professional keywords
-  // OR that appear in the resume's own vocabulary — ignore all other JD noise
   const meaningfulJdTokens = [...allJdTokens].filter(
     t => TECH_KEYWORDS.has(t) || resumeTokens.has(t)
   );
 
-  if (meaningfulJdTokens.length === 0) return 0;
+  if (meaningfulJdTokens.length === 0) return { score: 0, matchedKeywords: [], missingKeywords: [], suggestions: [] };
 
-  const matched = meaningfulJdTokens.filter(t => resumeTokens.has(t)).length;
-  return Math.round((matched / meaningfulJdTokens.length) * 100);
+  const matchedKeywords = meaningfulJdTokens.filter(t => resumeTokens.has(t));
+  const missingKeywords = meaningfulJdTokens.filter(t => !resumeTokens.has(t));
+  const score = Math.round((matchedKeywords.length / meaningfulJdTokens.length) * 100);
+
+  return {
+    score,
+    matchedKeywords: matchedKeywords.sort(),
+    missingKeywords: missingKeywords.sort(),
+    suggestions: generateSuggestions(missingKeywords),
+  };
 }

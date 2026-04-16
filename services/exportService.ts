@@ -1,5 +1,5 @@
-import { Document, Packer, Paragraph, TextRun, AlignmentType, convertInchesToTwip } from 'docx';
-import { Resume } from '../types';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, convertInchesToTwip, ShadingType } from 'docx';
+import { Resume, Template } from '../types';
 
 // ========== PDF EXPORT ==========
 // Uses iframe + browser print for native A4 pagination.
@@ -65,98 +65,117 @@ ${stylesHtml}
 
 // ========== DOCX EXPORT ==========
 
-const sectionTitle = (text: string) =>
+// Template style config
+const TMPL = {
+  A: { nameColor: '111827', titleColor: '374151', secColor: '111827', borderColor: '9CA3AF', secAllCaps: true  as const },
+  B: { nameColor: '1E1B4B', titleColor: '4338CA', secColor: '4338CA', borderColor: '4338CA', secAllCaps: true  as const },
+  C: { nameColor: 'FFFFFF', titleColor: 'CBD5E1', secColor: '1E3A5F', borderColor: '1E3A5F', secAllCaps: false as const },
+};
+
+const makeSectionTitle = (text: string, tmpl: typeof TMPL[keyof typeof TMPL]) =>
   new Paragraph({
-    children: [new TextRun({ text, size: 24, bold: true, allCaps: true })],
+    children: [new TextRun({ text, size: 24, bold: true, allCaps: tmpl.secAllCaps, color: tmpl.secColor })],
     spacing: { before: 240, after: 120 },
-    border: { bottom: { color: 'auto', space: 1, style: 'single', size: 6 } },
+    border: { bottom: { color: tmpl.borderColor, space: 1, style: 'single', size: 6 } },
   });
 
-export const exportAsDocx = (data: Resume): void => {
-  const children: Paragraph[] = [];
+const NAVY_SHADE = { type: ShadingType.SOLID, fill: '1E3A5F', color: '1E3A5F' };
 
-  // Header
-  children.push(new Paragraph({
-    children: [new TextRun({ text: data.full_name || 'Your Name', bold: true, size: 44 })],
-    alignment: AlignmentType.CENTER,
+export const exportAsDocx = (data: Resume, template?: Template | null): void => {
+  const tmpl = TMPL[template ?? 'A'];
+  const st = (text: string) => makeSectionTitle(text, tmpl);
+  const isC = template === 'C';
+  const isB = template === 'B';
+
+  // ── Section builders ────────────────────────────────────────────────────────
+
+  const headerBlock: Paragraph[] = [];
+  headerBlock.push(new Paragraph({
+    children: [new TextRun({ text: data.full_name || 'Your Name', bold: true, size: 44, color: tmpl.nameColor })],
+    alignment: isC ? AlignmentType.LEFT : AlignmentType.CENTER,
     spacing: { after: 80 },
+    ...(isC ? { shading: NAVY_SHADE } : {}),
   }));
   if (data.target_role_title) {
-    children.push(new Paragraph({
-      children: [new TextRun({ text: data.target_role_title, size: 24, italics: true })],
-      alignment: AlignmentType.CENTER,
+    headerBlock.push(new Paragraph({
+      children: [new TextRun({ text: data.target_role_title, size: 24, italics: true, color: tmpl.titleColor })],
+      alignment: isC ? AlignmentType.LEFT : AlignmentType.CENTER,
       spacing: { after: 80 },
+      ...(isC ? { shading: NAVY_SHADE } : {}),
     }));
   }
   const contactParts = [data.email, data.phone, [data.city, data.country].filter(Boolean).join(', ')].filter(Boolean);
   if (contactParts.length > 0) {
-    children.push(new Paragraph({
-      children: [new TextRun({ text: contactParts.join(' | '), size: 18 })],
-      alignment: AlignmentType.CENTER,
+    headerBlock.push(new Paragraph({
+      children: [new TextRun({ text: contactParts.join(' | '), size: 18, color: isC ? 'CBD5E1' : '374151' })],
+      alignment: isC ? AlignmentType.LEFT : AlignmentType.CENTER,
+      ...(isC ? { shading: NAVY_SHADE } : {}),
     }));
   }
   if (data.linkedin_url) {
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `LinkedIn: ${data.linkedin_url}`, size: 18 })],
-      alignment: AlignmentType.CENTER,
+    headerBlock.push(new Paragraph({
+      children: [new TextRun({ text: `LinkedIn: ${data.linkedin_url}`, size: 18, color: isB ? '4338CA' : isC ? '93C5FD' : '374151' })],
+      alignment: isC ? AlignmentType.LEFT : AlignmentType.CENTER,
+      ...(isC ? { shading: NAVY_SHADE } : {}),
     }));
   }
   if (data.portfolio_url) {
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Portfolio: ${data.portfolio_url}`, size: 18 })],
-      alignment: AlignmentType.CENTER,
+    headerBlock.push(new Paragraph({
+      children: [new TextRun({ text: `Portfolio: ${data.portfolio_url}`, size: 18, color: isB ? '4338CA' : isC ? '93C5FD' : '374151' })],
+      alignment: isC ? AlignmentType.LEFT : AlignmentType.CENTER,
       spacing: { after: 120 },
+      ...(isC ? { shading: NAVY_SHADE } : {}),
     }));
   }
 
-  // Summary
+  const summaryBlock: Paragraph[] = [];
   if (data.summary) {
-    children.push(sectionTitle('Professional Summary'));
-    children.push(new Paragraph({ children: [new TextRun({ text: data.summary, size: 20 })] }));
+    const title = template === 'A' ? 'Professional Summary' : 'Summary';
+    summaryBlock.push(st(title));
+    summaryBlock.push(new Paragraph({ children: [new TextRun({ text: data.summary, size: 20 })] }));
   }
 
-  // Skills
-  const allSkills = [...(data.skills_core || []), ...(data.skills_tools || []), ...(data.skills_soft || [])];
-  if (allSkills.length > 0) {
-    children.push(sectionTitle('Skills'));
-    if (data.skills_core?.length > 0) {
-      children.push(new Paragraph({ children: [new TextRun({ text: 'Core: ', bold: true, size: 20 }), new TextRun({ text: data.skills_core.join(', '), size: 20 })] }));
-    }
-    if (data.skills_tools?.length > 0) {
-      children.push(new Paragraph({ children: [new TextRun({ text: 'Tools: ', bold: true, size: 20 }), new TextRun({ text: data.skills_tools.join(', '), size: 20 })] }));
-    }
-    if (data.skills_soft?.length > 0) {
-      children.push(new Paragraph({ children: [new TextRun({ text: 'Soft Skills: ', bold: true, size: 20 }), new TextRun({ text: data.skills_soft.join(', '), size: 20 })] }));
-    }
+  const skillsBlock: Paragraph[] = [];
+  const hasSkills = (data.skills_core?.length || data.skills_tools?.length || data.skills_soft?.length);
+  if (hasSkills) {
+    const skillsTitle = template === 'B' ? 'Technical Skills' : 'Skills';
+    skillsBlock.push(st(skillsTitle));
+    if (data.skills_core?.length > 0)
+      skillsBlock.push(new Paragraph({ children: [new TextRun({ text: 'Core: ', bold: true, size: 20 }), new TextRun({ text: data.skills_core.join(', '), size: 20 })] }));
+    if (data.skills_tools?.length > 0)
+      skillsBlock.push(new Paragraph({ children: [new TextRun({ text: 'Tools: ', bold: true, size: 20 }), new TextRun({ text: data.skills_tools.join(', '), size: 20 })] }));
+    if (data.skills_soft?.length > 0)
+      skillsBlock.push(new Paragraph({ children: [new TextRun({ text: 'Soft Skills: ', bold: true, size: 20 }), new TextRun({ text: data.skills_soft.join(', '), size: 20 })] }));
   }
 
-  // Experience
+  const experienceBlock: Paragraph[] = [];
   if (data.work_experience?.length > 0) {
-    children.push(sectionTitle('Work Experience'));
+    const expTitle = template === 'A' ? 'Work Experience' : 'Experience';
+    experienceBlock.push(st(expTitle));
     data.work_experience.forEach((job, i) => {
       if (i > 0) {
-        children.push(new Paragraph({
+        experienceBlock.push(new Paragraph({
           border: { top: { color: 'D1D5DB', space: 6, style: 'single', size: 4 } },
           spacing: { before: 120, after: 0 },
           children: [],
         }));
       }
-      children.push(new Paragraph({
+      experienceBlock.push(new Paragraph({
         children: [
           new TextRun({ text: job.title, bold: true, size: 22 }),
           new TextRun({ text: `\t${job.start_date} – ${job.end_date || 'Present'}`, size: 20 }),
         ],
         tabStops: [{ type: 'right', position: convertInchesToTwip(6.5) }],
       }));
-      children.push(new Paragraph({
+      experienceBlock.push(new Paragraph({
         children: [new TextRun({ text: [job.employer, job.location].filter(Boolean).join(', '), italics: true, size: 20 })],
         spacing: { after: 180 },
       }));
       job.achievements?.filter(a => a.trim()).forEach(ach => {
-        children.push(new Paragraph({ children: [new TextRun({ text: ach, size: 20 })], bullet: { level: 0 }, spacing: { after: 80 } }));
+        experienceBlock.push(new Paragraph({ children: [new TextRun({ text: ach, size: 20 })], bullet: { level: 0 }, spacing: { after: 80 } }));
       });
       if (job.tech_stack?.length > 0) {
-        children.push(new Paragraph({
+        experienceBlock.push(new Paragraph({
           children: [new TextRun({ text: 'Tech: ', bold: true, size: 20 }), new TextRun({ text: job.tech_stack.join(', '), size: 20 })],
           spacing: { before: 80, after: 80 },
         }));
@@ -164,33 +183,29 @@ export const exportAsDocx = (data: Resume): void => {
     });
   }
 
-  // Projects
+  const projectsBlock: Paragraph[] = [];
   if (data.projects?.length > 0) {
-    children.push(sectionTitle('Projects'));
+    projectsBlock.push(st('Projects'));
     data.projects.forEach((proj, i) => {
       if (i > 0) {
-        children.push(new Paragraph({
+        projectsBlock.push(new Paragraph({
           border: { top: { color: 'D1D5DB', space: 6, style: 'single', size: 4 } },
           spacing: { before: 120, after: 0 },
           children: [],
         }));
       }
-      children.push(new Paragraph({
-        children: [
-          new TextRun({ text: proj.name, bold: true, size: 22 }),
-        ],
-      }));
+      projectsBlock.push(new Paragraph({ children: [new TextRun({ text: proj.name, bold: true, size: 22 })] }));
       if (proj.link) {
-        children.push(new Paragraph({
-          children: [new TextRun({ text: `Portfolio: ${proj.link}`, size: 18, color: '6B7280' })],
+        projectsBlock.push(new Paragraph({
+          children: [new TextRun({ text: proj.link, size: 18, color: '6B7280' })],
           spacing: { after: 160 },
         }));
       }
       proj.description?.forEach(d => {
-        children.push(new Paragraph({ children: [new TextRun({ text: d, size: 20 })], bullet: { level: 0 } }));
+        projectsBlock.push(new Paragraph({ children: [new TextRun({ text: d, size: 20 })], bullet: { level: 0 } }));
       });
       if (proj.tech_stack?.length > 0) {
-        children.push(new Paragraph({
+        projectsBlock.push(new Paragraph({
           children: [new TextRun({ text: 'Tech: ', bold: true, size: 20 }), new TextRun({ text: proj.tech_stack.join(', '), size: 20 })],
           spacing: { before: 160, after: 80 },
         }));
@@ -198,32 +213,31 @@ export const exportAsDocx = (data: Resume): void => {
     });
   }
 
-  // Education
+  const educationBlock: Paragraph[] = [];
   if (data.education?.length > 0) {
-    children.push(sectionTitle('Education'));
+    educationBlock.push(st('Education'));
     data.education.forEach(edu => {
-      children.push(new Paragraph({
+      educationBlock.push(new Paragraph({
         children: [
           new TextRun({ text: [edu.degree, edu.discipline].filter(Boolean).join(', '), bold: true, size: 22 }),
           new TextRun({ text: `\t${edu.graduation_date || ''}`, size: 20 }),
         ],
         tabStops: [{ type: 'right', position: convertInchesToTwip(6.5) }],
       }));
-      children.push(new Paragraph({
+      educationBlock.push(new Paragraph({
         children: [new TextRun({ text: edu.institution || '', italics: true, size: 20 })],
         spacing: { after: 80 },
       }));
-      if (edu.gpa) {
-        children.push(new Paragraph({ children: [new TextRun({ text: `GPA: ${edu.gpa}`, size: 20 })] }));
-      }
+      if (edu.gpa)
+        educationBlock.push(new Paragraph({ children: [new TextRun({ text: `GPA: ${edu.gpa}`, size: 20 })] }));
     });
   }
 
-  // Certifications
+  const certsBlock: Paragraph[] = [];
   if (data.certifications?.length > 0) {
-    children.push(sectionTitle('Certifications'));
+    certsBlock.push(st('Certifications'));
     data.certifications.forEach(cert => {
-      children.push(new Paragraph({
+      certsBlock.push(new Paragraph({
         children: [
           new TextRun({ text: cert.name, bold: true, size: 22 }),
           new TextRun({ text: ` — ${cert.issuer}`, size: 20 }),
@@ -231,14 +245,18 @@ export const exportAsDocx = (data: Resume): void => {
         ],
         tabStops: [{ type: 'right', position: convertInchesToTwip(6.5) }],
       }));
+      if (cert.show_credential_id && cert.credential_id)
+        certsBlock.push(new Paragraph({ children: [new TextRun({ text: `ID: ${cert.credential_id}`, size: 18, color: '374151' })] }));
+      if (cert.show_credential_url && cert.credential_url)
+        certsBlock.push(new Paragraph({ children: [new TextRun({ text: cert.credential_url, size: 18, color: '4F46E5' })], spacing: { after: 80 } }));
     });
   }
 
-  // Awards
+  const awardsBlock: Paragraph[] = [];
   if (data.awards?.length > 0) {
-    children.push(sectionTitle('Awards & Honors'));
+    awardsBlock.push(st(template === 'C' ? 'Key Achievements' : 'Awards & Honors'));
     data.awards.forEach(award => {
-      children.push(new Paragraph({
+      awardsBlock.push(new Paragraph({
         children: [
           new TextRun({ text: award.name || '', bold: true, size: 22 }),
           award.issuer ? new TextRun({ text: ` — ${award.issuer}`, size: 20 }) : new TextRun(''),
@@ -246,22 +264,70 @@ export const exportAsDocx = (data: Resume): void => {
         ],
         tabStops: [{ type: 'right', position: convertInchesToTwip(6.5) }],
       }));
-      if (award.description) {
-        children.push(new Paragraph({ children: [new TextRun({ text: award.description, size: 20 })], spacing: { after: 60 } }));
-      }
+      if (award.description)
+        awardsBlock.push(new Paragraph({ children: [new TextRun({ text: award.description, size: 20 })], spacing: { after: 60 } }));
     });
   }
 
-  // Languages
+  const languagesBlock: Paragraph[] = [];
   if (data.languages?.length > 0) {
-    children.push(sectionTitle('Languages'));
-    children.push(new Paragraph({
+    languagesBlock.push(st('Languages'));
+    languagesBlock.push(new Paragraph({
       children: [new TextRun({
         text: data.languages.map(l => `${l.language}${l.proficiency ? ` (${l.proficiency})` : ''}`).join(' · '),
         size: 20,
       })],
     }));
   }
+
+  const volunteeringBlock: Paragraph[] = [];
+  if (data.volunteering?.length > 0) {
+    volunteeringBlock.push(st('Volunteering'));
+    data.volunteering.forEach(v => {
+      volunteeringBlock.push(new Paragraph({
+        children: [
+          new TextRun({ text: v.name || '', bold: true, size: 22 }),
+          v.organization ? new TextRun({ text: ` — ${v.organization}`, size: 20 }) : new TextRun(''),
+          v.date ? new TextRun({ text: `\t${v.date}`, size: 20 }) : new TextRun(''),
+        ],
+        tabStops: [{ type: 'right', position: convertInchesToTwip(6.5) }],
+      }));
+      if (v.description)
+        volunteeringBlock.push(new Paragraph({ children: [new TextRun({ text: v.description, size: 20 })], spacing: { after: 60 } }));
+    });
+  }
+
+  const publicationsBlock: Paragraph[] = [];
+  if (data.publications?.length > 0) {
+    publicationsBlock.push(st('Publications'));
+    data.publications.forEach(pub => {
+      publicationsBlock.push(new Paragraph({ children: [new TextRun({ text: pub.title || '', bold: true, size: 22 })] }));
+      if (pub.venue || pub.date) {
+        publicationsBlock.push(new Paragraph({
+          children: [new TextRun({ text: [pub.venue, pub.date].filter(Boolean).join(', '), italics: true, size: 20 })],
+          spacing: { after: 60 },
+        }));
+      }
+      if (pub.highlight)
+        publicationsBlock.push(new Paragraph({ children: [new TextRun({ text: pub.highlight, size: 20 })], bullet: { level: 0 } }));
+    });
+  }
+
+  // ── Section ordering by template ────────────────────────────────────────────
+  // Template C (Modern Pro): left col = Summary,Experience,Projects,Volunteering
+  //                          right col = Awards,Languages,Skills,Education,Certs
+  // Template B (Tech Impact): Summary,Skills,Experience,Projects,Education,Certs,Awards,Languages,Volunteering,Publications
+  // Template A (Classic ATS): Summary,Skills,Experience,Projects,Education,Certs,Awards,Languages,Volunteering,Publications
+
+  let ordered: Paragraph[][];
+  if (template === 'C') {
+    ordered = [headerBlock, summaryBlock, experienceBlock, projectsBlock, volunteeringBlock, awardsBlock, languagesBlock, skillsBlock, educationBlock, certsBlock, publicationsBlock];
+  } else {
+    // A and B share same order; B uses different section title strings (handled above)
+    ordered = [headerBlock, summaryBlock, skillsBlock, experienceBlock, projectsBlock, educationBlock, certsBlock, awardsBlock, languagesBlock, volunteeringBlock, publicationsBlock];
+  }
+
+  const children = ordered.flat();
 
   const doc = new Document({
     sections: [{
@@ -279,7 +345,7 @@ export const exportAsDocx = (data: Resume): void => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'resume.docx';
+    a.download = `resume_${template || 'A'}.docx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

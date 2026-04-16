@@ -8,7 +8,7 @@ import TemplateSelector from './components/TemplateSelector';
 import { set } from 'lodash-es';
 import { exportAsPdf, exportAsDocx, exportAsCsv, exportAsJson } from './services/exportService';
 import { importFromFile } from './services/importService';
-import { computeATSScore, computeJDMatchScore } from './services/atsScore';
+import { computeATSScore, computeJDMatchScore, JDMatchResult } from './services/atsScore';
 import { saveResume, loadResume, clearResume, STORAGE_KEY, TEMPLATE_KEY, VIEW_MODE_KEY } from './services/storage';
 
 // Deep merge: user fields override sample; empty user fields fall back to sample
@@ -80,8 +80,8 @@ const App: React.FC = () => {
 
   const hasAnyData = !isResumeEmpty(userResumeData);
   const atsResult = useMemo(() => computeATSScore(userResumeData), [userResumeData]);
-  const jdMatchScore = useMemo(
-    () => jd.trim() ? computeJDMatchScore(userResumeData, jd) : undefined,
+  const jdMatchResult = useMemo(
+    (): JDMatchResult | undefined => jd.trim() ? computeJDMatchScore(userResumeData, jd) : undefined,
     [userResumeData, jd]
   );
 
@@ -168,7 +168,7 @@ const App: React.FC = () => {
         exportAsPdf('resume-preview-container');
         break;
       case 'docx':
-        exportAsDocx(exportData);
+        exportAsDocx(exportData, selectedTemplate);
         break;
       case 'csv':
         exportAsCsv(exportData);
@@ -177,7 +177,7 @@ const App: React.FC = () => {
         exportAsJson(exportData);
         break;
     }
-  }, [hasAnyData, userResumeData]);
+  }, [hasAnyData, userResumeData, selectedTemplate]);
 
   const [mobileTab, setMobileTab] = useState<'form' | 'preview'>('form');
 
@@ -193,7 +193,7 @@ const App: React.FC = () => {
           hasData={hasAnyData}
           viewMode={viewMode}
           atsResult={atsResult}
-          jdMatchScore={jdMatchScore}
+          jdMatchResult={jdMatchResult}
         />
       </div>
 
